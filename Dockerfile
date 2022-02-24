@@ -78,7 +78,7 @@ ENV PEGASUS_ENABLE_CQL=true
 
 # If set to true, the CMPI_Provider manager is created and cmpi providers
 # included in the test environment. Default is true
-ENV PEGASUS_ENABLE_CMPI_PROVIDER_MANAGER=false
+ENV PEGASUS_ENABLE_CMPI_PROVIDER_MANAGER=true
 
 # Logging
 # If true, enable the audit-logger that logs all operations that modify
@@ -129,7 +129,6 @@ ENV PEGASUS_CLIENT_TRACE_ENABLE=true
 # requires installation of sqlite and setting SQLITE_HOME. Default is false
 # ENV PEGASUS_USE_SQLITE_REPOSITORY=true
 
-
 # Reduce the nunber of tests executed during the test phase. This reduces
 # the time to execute the test suite.
 # TODO test this before using
@@ -146,9 +145,10 @@ ENV PEGASUS_CLIENT_TRACE_ENABLE=true
 # TODO: This is for development build.
 ENV PATH=${PEGASUS_HOME}/bin:$PATH
 
-# Add files for building the server image
-COPY ./makefile_wbem-build ${PEGASUS_WBEM_ROOT}/makefile
-COPY ./Dockerfile_wbem-server ${PEGASUS_WBEM_ROOT}/Dockerfile
+# Add the Makefile and Dockerfile for building the server image based on
+# the build image
+COPY ./makefile_wbemserver-build ${PEGASUS_WBEM_ROOT}/Makefile
+COPY ./Dockerfile_wbemserver-build ${PEGASUS_WBEM_ROOT}/Dockerfile
 
 # Build folder
 WORKDIR ${PEGASUS_WBEM_ROOT}

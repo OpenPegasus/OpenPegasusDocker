@@ -6,7 +6,7 @@ USER root
 # Required so that pipes work properly in the Dockerfile
 SHELL [ "/bin/bash", "-o", "pipefail", "-c" ]
 
-# Package installations
+# Core updates and Package installations
 RUN apt-get update && \
     apt-get install -y \
     ack-grep \
@@ -22,12 +22,12 @@ ENV PEGASUS_HOME=${PEGASUS_WBEM_ROOT}/home
 # Create directory structure
 RUN mkdir -p ${PEGASUS_HOME}
 
-# Run settings
+# OpenPegasus run settings
 # Settings below that are flags, with values set to true, enable the action
 # simply through the existance of the variable.  The variables value has no
 # effect.  Note that there are almost NO environment variables to control
-# pegasus execution.  Execution variations are controlled through the
-# config variables that can be viewed through the client cimconfig
+# pegasus execution.  Excution variations are controled through the
+# config variables that can be viewed through the clienc cimconfig
 # and the web admin interface
 # TODO: remove the following after we confirm that they are not needed
 # ENV PEGASUS_DEBUG=true

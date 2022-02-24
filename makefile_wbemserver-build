@@ -1,0 +1,273 @@
+# Copyright 2020 Keyport Techonologies, Inc.  All rights reserved.
+# Copyright 2020 Inova Development, Inc.  All rights reserved.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This make file is copied into the container as Makefile and provides the
+# targets to build and test OpenPegasus and create the resulting
+# server image which will contain an executable OpenPegasus image.
+#
+
+# Usage:
+#
+# make          Same as "make all".
+# make all      Build and publish a server image.
+# make build    Build the server image.
+# make test     Run tests against the built server.
+# make deploy   Build the server, a server image and push the image to an image registry.
+# make clean    Remove build output, build image and server images.
+#
+# Notes:
+#
+# 1. Build only runs the build and tests the server.  The folder home will
+#    contain the built server.
+# 2. Publish will build, test, create the server image and push it to an image
+#    registry.
+# 3. The ~/.ssh folder and the Docker-in-Docker folder need to be mapped
+#    volumes when running a make command.
+#
+# The build container can be started with the following command
+#    sudo docker run -it --rm \
+#                    -v /home/<username>/.ssh:/root/.ssh \
+#                    -v /var/run/docker.sock:/var/run/docker.sock \
+#                         wbem-build:tag \
+#                         "make build"
+
+DOCKER_REGISTRY=openpegasus
+
+SERVER_IMAGE=wbem-server
+SERVER_IMAGE_VERSION=0.1.1
+
+# Use http to clone repository because no authentication required
+PEGASUS_GIT_TAG=""
+PEGASUS_GIT_REPOSITORY=http://github.com/OpenPegasus/OpenPegasus.git
+
+SHELL=/bin/bash
+
+BUILD_LOG="server-build.log"
+
+.ONESHELL:
+.PHONY: all build test publish clean help
+
+.PHONY: help
+help:
+    @echo "Usage:"
+    @echo ""
+    @echo " make          Same as make all."
+    @echo " make all      Build and publish a server image."
+    @echo " make build    Build the server image."
+    @echo " make test     Run tests against the built server."
+    @echo " make deploy   Build the server, a server image and push the image to an image registry."
+    @echo " make clean    Remove build output, build image and server images."
+    @echo ""
+    @echo "Make variables:"
+    @echo ""
+    @echo " DOCKER_REGISTRY = $DOCKER_REGISTRY"
+    @echo " SERVER_IMAGE_VERSION = $SERVER_IMAGE_VERSION. See version.txt"
+    @echo " PEGASUS_GIT_TAG = $PEGASUS_GIT_TAG"
+    @echo ""
+
+    @echo "Notes:"
+    @echo "1. Build only runs the build and tests the server.  The folder home will"
+    @echo "   contain the built server."
+    @echo "2. Publish will build, test, create the server image and push it to an image"
+    @echo "   registry."
+    @echo "3. The ~/.ssh folder and the Docker-in-Docker folder need to be mapped"
+    @echo "   volumes when running a make command."
+    @echo ""
+
+
+# Top-level build targets
+all: build \
+    publish
+
+build: clone-repository \
+    build-server \
+    test-server
+
+deploy: build \
+    docker-build-server-image \
+    docker-push-server-image
+
+test: test-server
+
+clean: clean-build \
+    docker-remove-server-images
+
+# Subtargets for build
+clone-repository:
+    @echo "Cloning OpenPegasus GitHub respository using build container..."
+    @echo "SERVER_IMAGE_VERSION = $${SERVER_IMAGE_VERSION}. See version.txt"
+    @echo "PEGASUS_GIT_TAG = $${PEGASUS_GIT_TAG}"
+
+    @echo "Listing the current environment path..."
+    @echo ${PATH}
+
+    @echo Set global git config to ignore certificate
+    git config --global http.sslverify false
+
+    @echo "Changing to WBEM root directory ${PEGASUS_WBEM_ROOT}"
+    cd ${PEGASUS_WBEM_ROOT}
+
+    @echo "Cloning OpenPegasus github repo under the WBEM root directory ${PEGASUS_GIT_REPOSITORY}"
+    @echo "Cloning OpenPegasus main branch"
+    git clone ${PEGASUS_GIT_REPOSITORY}
+
+    if [ -z ${PEGASUS_GIT_TAG+x} ];
+    then
+        @echo "Set PEGASUS_GIT_TAG to use OpenPegasus version git tag"
+        @echo "Using git tag $PEGASUS_GIT_TAG"
+        git checkout tags/$PEGASUS_GIT_TAG
+    fi
+
+
+build-server:
+    @echo "Building the server using the build container build definitions."
+
+    @echo "Changing to pegasus root directory..."
+    cd ${PEGASUS_ROOT}
+
+    @echo "Building the server using the pegasus source..."
+    make clobber clean
+    make build
+
+test-server:
+    @echo "Testing the server in the build container..."
+
+    @echo "Changing to pegasus root directory..."
+    cd ${PEGASUS_ROOT}
+
+    @echo "Testing the server build..."
+    make repository
+    make testrepository
+    # make tests is a simplified subset of the tests.
+    make tests
+
+    # Recreate the repository after tests.  Note that we should actually clear
+    # the home directory of a number of items and leave just what is required
+    make repository
+    make testrepository
+
+# The following target is used only manually to execute a complete test of
+# the server environment.  It requires the root/PG_Interop namespace and
+# therefore changes the env variable to define this namespace. The original
+# namespace should be restored and the build reexecuted to restore the original
+# docker configuration.
+complete-server-build-test: clone-repository
+    @echo "build with interop root/pg_interop and run all tests..."
+    @echo "Changing to pegasus root directory..."
+    cd ${PEGASUS_ROOT}
+
+    @echo "Modify ${PEGASUS_INTEROP_NAMESPACE} to root/PG_interop""
+    export PEGASUS_INTEROP_NAMESPACE_SAVED=${PEGASUS_INTEROP_NAMESPACE}
+    export PEGASUS_INTEROP_NAMESPACE=root/PG_interop
+    @echo "Building the server using the pegasus source..."
+    make clobber clean
+    make build world
+    @echo "WARNING: Interop namespace now set to ${PEGASUS_INTEROP_NAMESPACE}
+    export PEGASUS_INTEROP_NAMESPACE=${PEGASUS_INTEROP_NAMESPACE_SAVED}
+    unset PEGASUS_INTEROP_NAMESPACE_SAVED
+
+
+provision-server:
+    @echo "Provision the server in build container..."
+
+    @echo "Create the repository..."
+    make repository
+
+    # TODO: This will become optional so that the user can create their
+    # specific repository extensions.
+    make testrepository
+
+remove-uneeded-components:
+    @echo "Remove the server unwanted files in the build container..."
+
+    @echo "Remove all test executables"
+    cd $${PEGASUS_HOME}
+    rm -f "bin/Test*"
+
+    @echo "Remove object files"
+    rm -rf obj
+    rm -rf test
+
+
+    @echo "Remove any trace files"
+    rm -f trace/*
+
+    @echo Remove unwanted schemas
+    # TODO: This assumes that CIM241 is the desired schema
+    # This can only be used if there is no correspondence to files on the
+    # host since it removes the files from the host also. Blocking for now
+    cd ${PEGASUS_ROOT}/Schemas
+    # rm -rdf CIM2131
+    # rm -rdf CIM217
+    # rm -rdf CIM222
+    # rm -rdf CIM225
+    # rm -rdf CIM228
+    # rm -rdf CIM231
+    # rm -rdf CIM236
+    # rm -rdf CIM25
+    # rm -rdf CIM29
+    # FUTURE: Remove all source files
+    @echo "Changing to pegasus root directory..."
+    cd ${PEGASUS_ROOT}
+    rm -rdf src
+    rm -rdf InterfaceArchive
+    rm -rdf Schemas
+    rm -rdf rpm
+    rm -rdf installs
+    rm -rdf mak
+    rm -rdf Schemas
+
+
+# Subtargets for publish
+docker-build-server-image: remove-uneeded-components
+
+    @echo "Building the WBEM Server image..."
+
+    @echo "Listing the current docker version..."
+    docker version
+
+    @echo "Changing to WBEM root directory..."
+    cd ${PEGASUS_WBEM_ROOT}
+
+    @echo "Build docker image ${SERVER_IMAGE}:${SERVER_IMAGE_VERSION}"
+    docker build --tag ${SERVER_IMAGE}:${SERVER_IMAGE_VERSION} .
+
+docker-push-server-image:
+    @echo "Pushing the built WBEM Server image to private image registry..."
+
+    docker logout
+    docker login -u $${DOCKER_USER} -p $${DOCKER_PASSWORD}
+    docker tag ${SERVER_IMAGE}:${SERVER_IMAGE_VERSION} ${DOCKER_REGISTRY}/${SERVER_IMAGE}:${SERVER_IMAGE_VERSION}
+    docker push ${DOCKER_REGISTRY}/${SERVER_IMAGE}:${SERVER_IMAGE_VERSION}
+    docker logout
+
+
+# Subtargets for clean
+clean-build:
+    @echo "Cleaning the build container..."
+
+    @echo "Changing to pegasus root directory..."
+    cd ${PEGASUS_ROOT}
+
+    @echo "Cleaning the build..."
+    make clobber
+    make clean
+
+docker-remove-server-images:
+    @echo "Removing server images..."
+
+    @echo "Removing the repository tagged server image..."
+
+    docker rmi ${DOCKER_REGISTRY}/${SERVER_IMAGE}:${SERVER_IMAGE_VERSION}
+
+    @echo "Removing the server image..."
+    docker rmi ${SERVER_IMAGE}:${SERVER_IMAGE_VERSION}

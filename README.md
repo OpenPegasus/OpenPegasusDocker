@@ -1,32 +1,51 @@
 # OpenPegasus Docker Container
 
 ## Introduction
-This repository creates a build image file for building the OpenPegasus
-implementation of DMTF's Storage Management Initiative (SMI) Common Information
-Model (CIM) Server.
+This repository contains the docker files and makef iles to create build docker images for
+
+* building the OpenPegasus build image in which an OpenPegasus wbem server
+  run image can be built
+* building from the OpenPegasus wbem server run image from within running build image.
+
+OpenPegasus is an implementation of DMTF's Storage Management Initiative (SMI) Common Information
+Model (CIM) Server. The source code for OpenPegasus is contained in the
+OpenPegasus repository of this OpenPegasus project.
+
+Build build and run images are stored in the Docker repository OpenPegasus and
+can be freely downloaded.
+
+STATUS: Work in progress 27 Feb. 2022.  Not yet released.
 
 ## Requirements
 
 The following must be present prior to building images.
 
 * Docker version 19.x.x or later
-* SSH keys that allow access to GitHub and the OpenPegasus repository
+* SSH keys that allow access to GitHub and the OpenPegasus github repository
 
 ## How to Build the Images
-Building the SMI Server image is a two step process which first requires
-building the build image and then the server image.  Building the build image
-can be skipped though if you choose to use one of the published images.
+Building the OpenPegasus WBEM Server image is a two step process which first
+requires building the server build image and then the server image.  Building the
+build image can be skipped though if you choose to use one of the published
+images.
 
-### How to Build the SMI Build Image
-To build the docker image for building the SMI Server image first set the image
-version in the version.txt file.  Next execute the following build command.
+The server build image builds the OpenPegasus WBEM server by compiling and
+testingthe source code from the OpenPegasus/OpenPegasus repository.
+
+### How to Build the WBEM Server Build Image
+To build the docker image for building the OpenPegasus WBEM Server image first
+set the docker image version in the version.txt file.  Next execute the
+following build command.
 
 ```console
 make build
 ```
-This will lint the Dockerfile and then build the image provided no linting errors were found.
+This will lint the Dockerfile and then build the basic image provided no linting errors were found.
 
-The SMI Build makefile supports the following targets.
+This image will contain the make file makefile_wbem-build which is the file that
+defines the download
+
+The WBEM Build makefile supports the following targets.
 
 ```
 make lint     Lint the Dockerfile.
@@ -35,12 +54,13 @@ make deploy   Deploy, push the build image to an image registry.
 make clean    Remove the build image from the local machine.
 ```
 
-### How to Build the SMI Server Image
+### How to Build the OpenPegasus WBEM Server Image
 Using the build image the server image can now be built.  Run the following
 command line.
 
 ```console
-sudo docker run -it --rm -v /home/<username>/.ssh:/root/.ssh -v /var/run/docker.sock:/var/run/docker.sock smi-build:tag /bin/bash
+sudo $PWD/make run_build_server
+sudo docker run -it --rm -v /home/$USER/.ssh:/root/.ssh -v /var/run/docker.sock:/var/run/docker.sock smi-build:tag /bin/bash
 ```
 
 You will be presented with a bash command prompt with the SMI root directory as
@@ -58,7 +78,7 @@ make clean    Remove build output, build image and server images
 
 "make build" : clones the current OpenPegasus project, starts a build and runs the pegasus tests against the built server.
 
-"make publish": perform all the above build tasks plus builds an smi-server image which is presently pushed to a private image registry.
+"make publish": perform all the above build tasks plus builds an wbem-server image which is presently pushed to a private image registry.
 
 The same build tasks can also be specified on the docker command line as shown below.
 
