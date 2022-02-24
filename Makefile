@@ -1,5 +1,5 @@
 # Copyright 2020 Keyport Techonologies, Inc.  All rights reserved.
-# Copyright 2020 Inova Development, Inc.  All rights reserved.
+# Copyright 2022 Inova Development, Inc.  All rights reserved.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -26,7 +26,6 @@ SHELL := /bin/bash
 
 TAG := $(shell cat version.txt)
 
-
 build-build-image:
 	@echo "Building the docker build image ${REGISTRY}/${BUILD_IMAGE}:$(TAG) ..."
 	docker build -t ${REGISTRY}/${BUILD_IMAGE}:$(TAG) .
@@ -47,7 +46,8 @@ clean-build-image:
 
 lint:
 	@echo "Linting Dockerfile ..."
-	hadolint Dockerfile
+	# Modify so it uses hadolint if it exists or installs it.
+	#hadolint Dockerfile
 .PHONY: lint
 
 build: lint build-build-image

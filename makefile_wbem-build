@@ -34,7 +34,7 @@
 #	                 wbem-build:tag \
 #					 "make build"
 
-DOCKER_REGISTRY=openpegasus
+DOCKER_REGISTRY=keyporttech
 
 SERVER_IMAGE=wbem-server
 SERVER_IMAGE_VERSION=0.1.1

@@ -58,7 +58,7 @@ make clean    Remove build output, build image and server images
 
 "make build" : clones the current OpenPegasus project, starts a build and runs the pegasus tests against the built server.
 
-"make publish": perform all the above build tasks plus builds an smi-server image which is presently pushed to a private image registry.
+"make publish": perform all the above build tasks plus builds an wbem-server image which is presently pushed to a private image registry.
 
 The same build tasks can also be specified on the docker command line as shown below.
 
