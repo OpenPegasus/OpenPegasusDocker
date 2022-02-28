@@ -42,7 +42,7 @@ help:
 	@echo "  Docker image name = ${BUILD_IMAGE}"
 	@echo "  Docker image version tag = ${TAG}"
 	@echo ""
-	@echo "NOTE: DOCKER_USER and DOCKER_PASSWORD must be set to log in to docker"
+	@echo "NOTE: DOCKER_USER and DOCKER_PASSWORD are requested on deploy"
 	@echo ""
 
 build-build-image:
@@ -53,12 +53,7 @@ build-build-image:
 publish-build-image:
 	@echo "Publishing the wbem server build image ${REGISTRY}/${BUILD_IMAGE}:$(TAG) ..."
 	docker logout
-	@echo "Input DOCKER USER NAME and PASSWORD"
-	@read -p "DOCKER NAME: " DOCKER_USER
-	#@read -p "DOCKER password: " DOCKER_PASSWORD
-	@echo login to DOCKER ${DOCKER_USER} --password-stdin
-	docker login -u ${DOCKER_USER} --password-stdin
-	#docker login -u kschopmeyer -p 3blindmice
+	docker login -u $${DOCKER_USER} -p $${DOCKER_PASSWORD}
 	docker push ${REGISTRY}/${BUILD_IMAGE}:$(TAG)
 	docker logout
 .PHONY: publish-build-image
@@ -75,10 +70,8 @@ build-openpegasus:
 		-v /var/run/docker.sock:/var/run/docker.sock $BUILD_IMAGE:$TAG /bin/bash
 
 lint:
-	@echo "Linting Dockerfile ..."
-	@echo "Linting disabled for now. TODO extend to use linting"
-	# TODO: Modify so it uses hadolint if it exists or installs it.
-	# hadolint Dockerfile
+	@echo "Linting Dockerfile if hadolint exists..."
+	-hadolint Dockerfile
 .PHONY: lint
 
 build: lint build-build-image
