@@ -46,13 +46,14 @@ help:
 	@echo ""
 
 build-build-image:
-	@echo "Building the docker build image ${REGISTRY}/${BUILD_IMAGE}:$(TAG) ..."
+	@echo "Building the docker build image..."
 	docker build -t ${REGISTRY}/${BUILD_IMAGE}:$(TAG) .
 .PHONY: build-build-image
 
 publish-build-image:
-	@echo "Publishing the wbem server build image ${REGISTRY}/${BUILD_IMAGE}:$(TAG) ..."
+	@echo "Publishing the wbem server build image..."
 	docker logout
+	docker image tag openpegasus/wbemserver-build.0.1.1 kschopmeyer/openpegasus:0.1.1
 	docker login -u $${DOCKER_USER} -p $${DOCKER_PASSWORD}
 	docker push ${REGISTRY}/${BUILD_IMAGE}:$(TAG)
 	docker logout
@@ -71,6 +72,7 @@ build-openpegasus:
 
 lint:
 	@echo "Linting Dockerfile if hadolint exists..."
+	# Allow hadolint to fail or not be found
 	-hadolint Dockerfile
 .PHONY: lint
 

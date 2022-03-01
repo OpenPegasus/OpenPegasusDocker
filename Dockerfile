@@ -120,11 +120,12 @@ ENV PEGASUS_CLIENT_TRACE_ENABLE=true
 # ENV PEGASUS_CIM_SCHEMA=CIM241
 
 # Define the repository type.  OpenPegasus allows variations on the
-# repository implementation for size, speed, etc.  These are define with
-# the following environment variables
+# repository implementation for size, speed, etc.  These are defined with
+# the following environment variable
 # Repository mode: may be XML or BIN.
-# ENV PEGASUS_REPOSITORY_MODE=XML
-# ENV PEGASUS_ENABLE_COMPRESSED_REPOSITORY=true
+ENV PEGASUS_REPOSITORY_MODE=BIN
+ENV PEGASUS_ENABLE_COMPRESSED_REPOSITORY=true
+
 # An alternate implemenation is Sqlite as a repository.  If used it
 # requires installation of sqlite and setting SQLITE_HOME. Default is false
 # ENV PEGASUS_USE_SQLITE_REPOSITORY=true
