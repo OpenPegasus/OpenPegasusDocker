@@ -91,15 +91,18 @@ ENV PEGASUS_ENABLE_AUDIT_LOGGER=true
 # Interop namespace
 # If set it defines the name for the interop namespace. The allowed
 # values are root/interop or interop.  The default interop namespace if
-# this not set is root/PG_Interop
+# this not set is root/PG_Interop. Note: Only limited pegasus internal tests can be run if
+# the interop namespace is not set to root/PG_interop
 ENV PEGASUS_INTEROP_NAMESPACE=root/interop
 
 # Debug build options
 # Enable the compiler debug mode if the following is true. Default is false
-ENV PEGASUS_DEBUG=true
-# If the following is enabled, the trace code is removed from build reducint
+ENV PEGASUS_DEBUG=false
+
+# If the following is enabled, the trace code is removed from build reducing
 # size. Default is false. TODO: Test this
 # ENV PEGASUS_REMOVE_METHODTRACE=true
+
 # The following variable set to true reduces size by not including some
 # information in the trace output.  TODO: This may not be documented in
 # the options document. Default is false
@@ -124,9 +127,10 @@ ENV PEGASUS_CLIENT_TRACE_ENABLE=true
 # the following environment variable
 # Repository mode: may be XML or BIN.
 ENV PEGASUS_REPOSITORY_MODE=BIN
-ENV PEGASUS_ENABLE_COMPRESSED_REPOSITORY=true
+# NOTE: This requires an extra library and header file for zlib.
+#ENV PEGASUS_ENABLE_COMPRESSED_REPOSITORY=true
 
-# An alternate implemenation is Sqlite as a repository.  If used it
+# An alternate implementation is Sqlite as a repository.  If used it
 # requires installation of sqlite and setting SQLITE_HOME. Default is false
 # ENV PEGASUS_USE_SQLITE_REPOSITORY=true
 
@@ -142,8 +146,8 @@ ENV PEGASUS_ENABLE_COMPRESSED_REPOSITORY=true
 # This is considered experimental and for WQL only.
 # ENV PEGASUS_SNIA_EXTENSIONS=true
 
-# Add to path for build
-# TODO: This is for development build.
+# Add to path for created executables to path for server start, cmd tools and
+# tests.  NOTE: Tests are removed as part of deploy of the server
 ENV PATH=${PEGASUS_HOME}/bin:$PATH
 
 # Add the Makefile and Dockerfile for building the server image based on
@@ -151,7 +155,7 @@ ENV PATH=${PEGASUS_HOME}/bin:$PATH
 COPY ./makefile_wbemserver-build ${PEGASUS_WBEM_ROOT}/Makefile
 COPY ./Dockerfile_wbemserver-build ${PEGASUS_WBEM_ROOT}/Dockerfile
 
-# Build folder
+# OpenPegasus Build folder
 WORKDIR ${PEGASUS_WBEM_ROOT}
 
 # Build the binaries and run the cimserver

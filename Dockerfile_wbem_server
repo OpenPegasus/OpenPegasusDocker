@@ -13,13 +13,15 @@ RUN apt-get update && \
     build-essential \
     curl \
     libssl-dev \
-    vim
+    vim \
+    && apt-get remove -y perl
 
-# Pegasus release file and key paths
+# Pegasus root directory.  The OpenPegasus git repository and home where
+# results of build are saved is within this directory
 ENV PEGASUS_WBEM_ROOT=/root/wbem
 ENV PEGASUS_HOME=${PEGASUS_WBEM_ROOT}/home
 
-# Create directory structure
+# Create the home directory
 RUN mkdir -p ${PEGASUS_HOME}
 
 # Run settings
@@ -29,6 +31,7 @@ RUN mkdir -p ${PEGASUS_HOME}
 # pegasus execution.  Execution variations are controlled through the
 # config variables that can be viewed through the client cimconfig
 # and the web admin interface
+
 # TODO: remove the following after we confirm that they are not needed
 # ENV PEGASUS_DEBUG=true
 # ENV PEGASUS_PLATFORM=LINUX_X86_64_GNU

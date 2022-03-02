@@ -40,9 +40,9 @@
 #                         wbem-build:tag \
 #                         "make build"
 
-DOCKER_REGISTRY=openpegasus
+DOCKER_REGISTRY=kschopmeyer
 
-SERVER_IMAGE=wbem-server
+SERVER_IMAGE=openpegasus_server
 SERVER_IMAGE_VERSION=0.1.1
 
 # Use http to clone repository because no authentication required
@@ -116,10 +116,12 @@ test-server:
 
 provision-server:
 	@echo "Provision the server in build container..."
+	@echo "Changing to pegasus root directory..."
+	cd ${PEGASUS_ROOT}
+	@echo "${PWD}"
 
 	@echo "Create the repository..."
 	make repository
-
 	# TODO: This will become optional so that the user can create their
 	# specific repository extensions.
 	make testrepository
@@ -128,8 +130,9 @@ remove-uneeded-components:
 	@echo "Remove the server unwanted files in the build container..."
 
 	@echo "Remove all test executables"
-	cd ${PEGASUS_HOME}
-	rm -f "bin/Test*"
+    # TODO: Should we leave some sort of validity test. Is there one of those?
+	cd ${PEGASUS_HOME}/bin
+	rm -f Test*
 
 	@echo "Remove object files"
 	rm -rf obj
@@ -142,7 +145,7 @@ remove-uneeded-components:
 	# TODO: This assumes that CIM241 is the desired schema
 	# This can only be used if there is no correspondence to files on the
 	# host since it removes the files from the host also. Blocking for now
-	# FUTURE: Remove all source files
+	# FUTURE: Remove all source files. This leaves only doc, test, www
 	@echo "Changing to pegasus root directory..."
 	cd ${PEGASUS_ROOT}
 	rm -rdf src
@@ -151,7 +154,6 @@ remove-uneeded-components:
 	rm -rdf rpm
 	rm -rdf installs
 	rm -rdf mak
-	rm -rdf Schemas
 
 
 # Subtargets for publish

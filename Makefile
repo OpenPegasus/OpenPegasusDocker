@@ -20,8 +20,12 @@
 # builds the docker image using Ubuntu and installs the OpenPegasus
 # make file into that container.
 
-REGISTRY=openpegasus
-BUILD_IMAGE=wbemserver-build
+# Currently the registry and build-image are defined to place both server
+# and build containers in the same docker repository. They are named
+# Registry - (username)/OpenPegasus:tag
+# where the tag defines both the container type (build or server)
+REGISTRY=kschopmeyer
+BUILD_IMAGE=openpegasus_build
 SHELL := /bin/bash
 TAG := $(shell cat version.txt)
 
@@ -47,13 +51,14 @@ help:
 
 build-build-image:
 	@echo "Building the docker build image..."
-	docker build -t ${REGISTRY}/${BUILD_IMAGE}:$(TAG) .
+	docker build -t ${BUILD_IMAGE}:$(TAG) .
 .PHONY: build-build-image
 
 publish-build-image:
 	@echo "Publishing the wbem server build image..."
 	docker logout
-	docker image tag openpegasus/wbemserver-build.0.1.1 kschopmeyer/openpegasus:0.1.1
+	#docker image tag openpegasus/wbemserver-build.0.1.1 kschopmeyer/openpegasus:0.1.1
+	docker image tag ${BUILD_IMAGE}.$(TAG) ${REGISTRY}/${BUILD_IMAGE}:${TAG}
 	docker login -u $${DOCKER_USER} -p $${DOCKER_PASSWORD}
 	docker push ${REGISTRY}/${BUILD_IMAGE}:$(TAG)
 	docker logout
@@ -67,8 +72,8 @@ clean-build-image:
 build-openpegasus:
 	@echo start the local server container image $BUILD_IMAGE:$TAG
 	sudo docker run -it --rm \
-		-v /home/$USER/.ssh:/root/.ssh \
-		-v /var/run/docker.sock:/var/run/docker.sock $BUILD_IMAGE:$TAG /bin/bash
+		-v /home/$${USER}/.ssh:/root/.ssh \
+		-v /var/run/docker.sock:/var/run/docker.sock $${REGISTRY}/$${BUILD_IMAGE}:$${TAG} /bin/bash
 
 lint:
 	@echo "Linting Dockerfile if hadolint exists..."
