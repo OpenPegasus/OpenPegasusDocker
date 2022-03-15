@@ -13,7 +13,11 @@ Change log
    .. git_changelog::
       :revisions: 1
 
-OpenPegasusDocker 0.0.1 - Release
+OpenPegasusDocker 0.1.2 - Release
+---------------------------------
+branch: main
+
+OpenPegasusDocker 0.1.1 - Release
 ---------------------------------
 branch: main
 

@@ -43,7 +43,7 @@
 DOCKER_REGISTRY=kschopmeyer
 
 SERVER_IMAGE=openpegasus_server
-SERVER_IMAGE_VERSION=0.1.1
+SERVER_IMAGE_VERSION=0.1.2
 
 # Use http to clone repository because no authentication required
 # PEGASUS_GIT_TAG=""
