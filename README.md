@@ -1,20 +1,27 @@
 # OpenPegasus Docker Container
 
 ## Introduction
-This repository contains the docker files and makef iles to create build docker images for
 
-* building the OpenPegasus build image in which an OpenPegasus wbem server
-  run image can be built
-* building from the OpenPegasus wbem server run image from within running build image.
+This repository contains the docker files and makefiles to create build docker
+images for:
 
-OpenPegasus is an implementation of DMTF's Storage Management Initiative (SMI) Common Information
-Model (CIM) Server. The source code for OpenPegasus is contained in the
-OpenPegasus repository of this OpenPegasus project.
+* Building an OpenPegasus build image ( the build image) in which an OpenPegasus
+  wbem server run image can be built. This image is based on Ubuntu  with the
+  Dockerfile, and Makefile to actually get OpenPegasus from the the github
+  repository, build it, clean up the results and test the created OpenPegasus,
+  and build a new image (OpenPegasusServer) that contains a runnable
+  OpenPegasus executable with CIM repository, etc.
+* Built OpenPegasus in a container such that OpenPegasus WBEM server starts
+  and runs when a Docker container is started from this image.
 
-Build build and run images are stored in the Docker repository OpenPegasus and
+OpenPegasus is an implementation of DMTF's Storage Management Initiative (SMI)
+Common Information Model (CIM) Server. The source code for OpenPegasus is
+contained in the OpenPegasus repository of this OpenPegasus project.
+
+Build and run images are stored in the Docker repository kschopmeyer and
 can be freely downloaded.
 
-STATUS: Work in progress 27 Feb. 2022.  Not yet released.
+STATUS: Initial limited release 0.1.1.
 
 ## Requirements
 
