@@ -29,75 +29,88 @@ RUN apt-get update && apt-get -y upgrade && \
     openssl \
     docker.io \
     build-essential \
-    libssl-dev \
-    libpam0g-dev \
     ack-grep \
     git \
     curl \
-    openssh-client \
+    libssl-dev \
+    libpam0g-dev \
     vim \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Pegasus file paths
-ENV PEGASUS_WBEM_ROOT=/root/wbem
+# Define environment variables for the Pegasus file paths
+
+# Root directory for OpenPegasus git clone, source code, and the build
+# results.
+ENV PEGASUS_BUILD_ROOT=/root/build_dir
 # PEGASUS_HOME defines the target location for pegasus builds including
 # object files, executables, the repository, and security files
-ENV PEGASUS_HOME=${PEGASUS_WBEM_ROOT}/home
+ENV PEGASUS_HOME=${PEGASUS_BUILD_ROOT}/openpegasus_home
 # Defines the top level of the pegasus source files (pegasus)
-ENV PEGASUS_ROOT=${PEGASUS_WBEM_ROOT}/OpenPegasus/pegasus
+ENV PEGASUS_ROOT=${PEGASUS_BUILD_ROOT}/OpenPegasus/pegasus
 
 # Create directory structure
 RUN mkdir -p ${PEGASUS_HOME} && \
     mkdir -p /root/.ssh
 
-# Build settings
+# OpenPegasus build settings
 # Settings below that are flags, with values set to true, enable the action
-# simply through the existance of the variable.  The variables value has no
+# simply through the existence of the variable.  The variables value has no
 # effect.
-# See pegasus/doc/BuildAndReleaseOpetions.html for more detailed information
+# See pegasus/doc/BuildAndReleaseOptiions.html for more detailed information
 # on the options
 
 # Platform defined for the docker image
+# This should not change since we will always build the run container with
+# 64 bit linux and expect an x86_64 platform
 ENV PEGASUS_PLATFORM=LINUX_X86_64_GNU
 
-ENV PEGASUS_USE_DEFAULT_MESSAGES=true
+# OpenPegasus build configuration is completely defined by multiple
+# environment variables.  The OpenPegasus doc directory defines all of thes
+# environment variables. The setting for the container are defined below.
+#
 
+#ENV PEGASUS_USE_DEFAULT_MESSAGES=true
+
+# The container will service both HTTP and HTTPS.
 # Define the connection and pegasus security environment including
 # ssl, pam, and pegasus usergroup
-ENV PEGASUS_HAS_SSL=true
-ENV OPENSSL=/usr
-ENV PEGASUS_PAM_AUTHENTICATION=true
-# Enable pegasus usergroup authorization
+#ENV PEGASUS_HAS_SSL=true
+#ENV OPENSSL=/usr
+#ENV PEGASUS_PAM_AUTHENTICATION=true
+# Enable pegasus usergroup authorization. We ignore this for now
 # TODO document the usergroup authorization capability
 # ENV PEGASUS_ENABLE_USERGROUP_AUTHORIZATION=true
 
-# Query capabilities. Enable execquery and CQL
-ENV PEGASUS_ENABLE_EXECQUERY=true
-ENV PEGASUS_ENABLE_CQL=true
+# Query capabilities. Enable execquery and CQL query language. The WQL
+# query language is enabled by default
+#ENV PEGASUS_ENABLE_EXECQUERY=true
+#ENV PEGASUS_ENABLE_CQL=true
 
+# Enable the provider manager for providers that use the CMPI interface
+# from providers to the OpenPegasus server
 # If set to true, the CMPI_Provider manager is created and cmpi providers
 # included in the test environment. Default is true
-ENV PEGASUS_ENABLE_CMPI_PROVIDER_MANAGER=true
+#ENV PEGASUS_ENABLE_CMPI_PROVIDER_MANAGER=true
 
-# Logging
+# Logging - Elable syslog output for OpenPegasus logging
 # If true, enable the audit-logger that logs all operations that modify
 # entities within the environement
-ENV PEGASUS_ENABLE_AUDIT_LOGGER=true
+#ENV PEGASUS_ENABLE_AUDIT_LOGGER=true
 # If set false, logs are sent to OpenPegasus specific log files.
 # default is true
 # ENV PEGASUS_USE_SYSLOGS=false
 
-# Interop namespace
+# Interop namespace - Use root/interop
 # If set it defines the name for the interop namespace. The allowed
 # values are root/interop or interop.  The default interop namespace if
 # this not set is root/PG_Interop. Note: Only limited pegasus internal tests can be run if
 # the interop namespace is not set to root/PG_interop
-ENV PEGASUS_INTEROP_NAMESPACE=root/interop
+#ENV PEGASUS_INTEROP_NAMESPACE=root/interop
 
 # Debug build options
 # Enable the compiler debug mode if the following is true. Default is false
-ENV PEGASUS_DEBUG=false
+#ENV PEGASUS_DEBUG=false
 
 # If the following is enabled, the trace code is removed from build reducing
 # size. Default is false. TODO: Test this
@@ -108,7 +121,7 @@ ENV PEGASUS_DEBUG=false
 # the options document. Default is false
 # ENV PEGASUS_NO_FILE_LINE_TRACE=true
 # Enable the trace facility in the pegasus client code. Default is false
-ENV PEGASUS_CLIENT_TRACE_ENABLE=true
+#ENV PEGASUS_CLIENT_TRACE_ENABLE=true
 # Causes compiler to remove all PEGASUS_ASSERT statements. default is false
 # TODO test
 # ENV PEGASUS_NOASSERTS=true
@@ -126,7 +139,8 @@ ENV PEGASUS_CLIENT_TRACE_ENABLE=true
 # repository implementation for size, speed, etc.  These are defined with
 # the following environment variable
 # Repository mode: may be XML or BIN.
-ENV PEGASUS_REPOSITORY_MODE=BIN
+# Use BIN because it is significantly smaller that XML and faster
+#ENV PEGASUS_REPOSITORY_MODE=BIN
 # NOTE: This requires an extra library and header file for zlib.
 #ENV PEGASUS_ENABLE_COMPRESSED_REPOSITORY=true
 
@@ -146,17 +160,21 @@ ENV PEGASUS_REPOSITORY_MODE=BIN
 # This is considered experimental and for WQL only.
 # ENV PEGASUS_SNIA_EXTENSIONS=true
 
-# Add to path for created executables to path for server start, cmd tools and
-# tests.  NOTE: Tests are removed as part of deploy of the server
+# Add path for created executables to PATH for server start, OpenPegasus
+# command line utilities and tests.  NOTE: Tests are removed as part of
+# deploy of the server
 ENV PATH=${PEGASUS_HOME}/bin:$PATH
 
 # Add the Makefile and Dockerfile for building the server image based on
 # the build image
-COPY ./makefile_wbemserver-build ${PEGASUS_WBEM_ROOT}/Makefile
-COPY ./Dockerfile_wbemserver-build ${PEGASUS_WBEM_ROOT}/Dockerfile
+COPY ./Makefile_wbemserver-build ${PEGASUS_BUILD_ROOT}/Makefile
+COPY ./Dockerfile_wbemserver-build ${PEGASUS_BUILD_ROOT}/Dockerfile
+COPY ./pegasus_build.env ${PEGASUS_BUILD_ROOT}/pegasus_build.env
+COPY ./pegasus_run.env ${PEGASUS_BUILD_ROOT}/pegasus_run.env
+
 
 # OpenPegasus Build folder
-WORKDIR ${PEGASUS_WBEM_ROOT}
+WORKDIR ${PEGASUS_BUILD_ROOT}
 
 # Build the binaries and run the cimserver
 ENTRYPOINT ["/bin/bash", "-l", "-c"]

@@ -93,6 +93,9 @@ The same build tasks can also be specified on the docker command line as shown b
 sudo docker run -it --rm -v /home/<username>/.ssh:/root/.ssh -v /var/run/docker.sock:/var/run/docker.sock smi-build:tag "make build"
 ```
 
+Adding /bin/bash at the end of the command causes the server to start at the bash
+console interface rather than automatically executing make build.
+
 The container will terminate though after it finishes executing the specified command.
 
 To only build, test and create the server image run these commands in build image bash shell.
@@ -104,12 +107,28 @@ make docker-build-server-image
 
 The make command for the build server image will build the server image smi-server:0.1.2 on your local machine.
 
-**Note:** At this time the tag can only be changed in the makefile.
+**Note:** At this time the tag can only be changed in the Makefile.
 
-If you wish to skip this step you can use one of the existing build images such as this one on Dockerhub.
+If you wish to skip this step you can use one of the existing build images
+such as this one on Dockerhub.
+
+The OpenPegasus build image is:
 
 ```
-peterlamanna/smi-build:0.1.0
+kschopmeyer/openpegasus-build:0.1.1
+```
+
+The corrsponding image for the running server is:
+
+```
+kschopmeyer/openpegasus-server:0.1.1
+```
+
+NOTE: Currently the build and server image are in a user repository kschopmeyer
+awating Docker approval of a public repository to be named OpenPegasus.
+
+```
+kschopmeyer/openpegasus-build:0.1.1
 ```
 
 ## How to Run the Server Image
@@ -117,33 +136,68 @@ peterlamanna/smi-build:0.1.0
 To run the server simply execute this command line.
 
 ```console
-sudo docker run -it --rm -p 127.0.0.1:5988:5988 -p 127.0.0.1:5989:5989 smi-server:0.1.2 /bin/bash
+sudo docker run -it --rm -p 127.0.0.1:5988:5988 -p 127.0.0.1:5989:5989 kschopmeyer/openpegasus-server:0.1.2 /bin/bash
 ```
 
 or to load the server image and start OpenPegasus when the server starts enter the run command
 without the last parameter ("/bin/bash")
 
+The above command starts the server
+
 ```console
 sudo docker run -it --rm -p 127.0.0.1:5988:5988 -p 127.0.0.1:5989:5989 smi-server:0.1.2
 ```
 
-
-Again, the bash shell will have the SMI root directory as the current working
-directory.  From there you can execute any cimserver of cimcli command.  To
+The bash shell will have the SMI root directory as the current working
+directory.  From there you can execute any cimserver or cimcli commands.  To
 start the server simply execute the following.
 
 ```console
 cimserver
 ```
 
+And to stop the server and return to the container console:
+
+```console
+cimserver -s
+```
+The server container will go through a shutdown process and return to the
+console interface.
+
 The server will start and print out to the console that it is listening on the default ports 5988 (http) and 5989 (https).
+
+
+## Docker build server configuration
+
+The docker built server is built with both https and http available.
+
+TODO: certificates
+
+The CIM repository is based on what has been built into the server.  Currently
+it is the CIM repository for CIM Schema 2.41.0 and a set of extensions for
+testing OpenPegasus including a number of classes and corresponding pegasus
+test providers.  This is scattered over a number of CIM namespaces including
+an Interop namespace root/interop.
+
+The OpenPegasus WEB interface. TODO
 
 ## Frequently asked questions
 Please see [FAQ.md](./FAQ.md) for frequently asked questions.
 
+1. Does this container work like most WBEM servers.
+   Yes.  It is a full OpenPegasus implementation except that rather than having
+   a model implementation that strictly adheres to to a DMTF or SMI profile, it
+   contains components of these models that are used for testing the intrigity of
+   the server.  Using a tool like OpenPegasus or pywbemtools, the server can
+   be explored from either a console attached to the container or directly
+   through the CIM/XML interface using the ports that have been defined for the
+   server in the startup command.
+
 ## Source Code
 
-* <https://github.com/OpenPegasus/OpenPegasusDocker.git>
+* OpenPegasusDocker <https://github.com/OpenPegasus/OpenPegasusDocker.git>
+* OpenPegasus <https://github.com/OpenPegasus/OpenPegasus.git>
+
 
 ## Maintainers
 
