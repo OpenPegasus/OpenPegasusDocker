@@ -15,7 +15,7 @@
 # make        	Same as "make all".
 # make all    	Build and publish a server image.
 # make build  	Build the server image.
-# make test   	Run tests against the built server.
+# make test   	Build tests repository and run tests against the built server.
 # make deploy   Build the server, a server image and push the image to an image registry.
 # make clean	Remove build output, build image and server images.
 #
@@ -44,9 +44,12 @@ PEGASUS_GIT_REPOSITORY=http://github.com/OpenPegasus/OpenPegasus.git
 
 SHELL=/bin/bash
 
+# TODO Nov 2022: should test be a part of build
+# TODO Nov 2022: Do not rebuild repo after test. Cannot see results of test
+#
 
 .ONESHELL:
-.PHONY: all build test publish clean
+.PHONY: all build test deploy publish clean
 
 # Top-level build targets
 all: build \
@@ -56,11 +59,11 @@ build: clone-repository \
 	   build-server \
 	   test-server
 
+test: test-server
+
 deploy: build \
 		docker-build-server-image \
 		docker-push-server-image
-
-test: test-server
 
 clean: clean-build \
 	   docker-remove-server-images
@@ -102,10 +105,8 @@ test-server:
 	make testrepository
 	make tests
 
-	# recreate after tests.  Note that we should actually clear the
-	# home directory of a number of items and leave just what is required
-	make repository
-	make testrepository
+	@echo "The repository should be rebuilt after these tests..."
+
 
 provision-server:
 	@echo "Provision the server in build container..."
@@ -134,21 +135,6 @@ remove-uneeded-components:
 		rm ${TRACEDIR}/*
 	endif
 
-	@echo Remove unwanted schemas
-	# TODO: This assumes that CIM241 is the desired schema
-	# This can only be used if there is no correspondence to files on the
-	# host since it removes the files from the host also. Blocking for now
-	cd ${PEGASUS_ROOT}/Schemas
-	# rm -rdf CIM2131
-	# rm -rdf CIM217
-	# rm -rdf CIM222
-	# rm -rdf CIM225
-	# rm -rdf CIM228
-	# rm -rdf CIM231
-	# rm -rdf CIM236
-	# rm -rdf CIM25
-	# rm -rdf CIM29
-	# FUTURE: Remove all source files
 
 # Subtargets for publish
 docker-build-server-image: remove-uneeded-components

@@ -6,15 +6,10 @@ USER root
 # Required so that pipes work properly in the Dockerfile
 SHELL [ "/bin/bash", "-o", "pipefail", "-c" ]
 
-# Package installations
+# Package installations in stallions for the run package
 RUN apt-get update && \
-    apt-get install -y \
-    # The following only used for testing the inside the run environment
-    ack-grep \
-    vim \
-    # Required by OpenPegasus both in build and server run
-    libssl-dev \
-    libpam0g-dev \
+    apt-get install -y  --no-install-recommends \
+    openssl \
     && apt-get remove -y perl
 
 # Pegasus root directory.  The OpenPegasus git repository and home where
@@ -24,12 +19,12 @@ RUN apt-get update && \
 #       here.  Or maybe just from here but not both
 ENV BUILDDIR=builddir
 ENV PEGASUS_BUILD_ROOT=/root/${BUILDDIR}
-ENV PEGASUS_HOME=${PEGASUS_BUILD_ROOT}/openpegasus_home
+ENV PEGASUS_HOME=${PEGASUS_HOME}
 
-# Create the home directory
+# Create the home directory which will contain the Pegasus runtime
 RUN mkdir -p ${PEGASUS_HOME}
 
-# Run settings
+# Define the build settings
 #
 # Settings below that are flags, with values set to true, enable the action
 # simply through the existence of the variable.  The variables value has no
@@ -37,13 +32,22 @@ RUN mkdir -p ${PEGASUS_HOME}
 # pegasus execution.  Execution variations are controlled through the
 # config variables that can be viewed through the client cimconfig
 # and the web admin interface
-ENV PATH=${PEGASUS_HOME}/bin:$PATH
-ENV LD_LIBRARY_PATH=${PEGASUS_HOME}/bin:${LD_LIBRARY_PATH}
 
-# Add makefile for using this build image
-#TODO: Not sure this does anything
+# ADD OpenPegasus bin directory to PATH to get access to runtime components
+ENV PATH=$PATH:${PEGASUS_HOME}/bin
+
+# Add the OpenPegasus library to the LD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH=${PEGASUS_HOME}/lib:${LD_LIBRARY_PATH}
+
+# TODO: Does this have to be part of the run time environment???
+ENV PEGASUS_HAS_SSL=true
+
+# OpenPegasus make target to execute post build tests. Can be any of the
+# targets defined in OpenPegasus Makefile or TestMakefile
+ENV PEGASUS_TEST_TARGET=alltests
+
+# add the pegasus build results to the run image
 COPY ./openpegasus_home ${PEGASUS_HOME}
-
 
 # Build folder
 WORKDIR ${PEGASUS_BUILD_ROOT}

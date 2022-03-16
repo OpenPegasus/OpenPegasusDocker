@@ -47,14 +47,6 @@ ONESHELL:
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
-DOCKER_REGISTRY=kschopmeyer
-
-SERVER_IMAGE=openpegasus_server
-SERVER_IMAGE_VERSION=0.1.2
-
-# Use http to clone repository because no authentication required
-# PEGASUS_GIT_TAG=""
-PEGASUS_GIT_REPOSITORY=http://github.com/OpenPegasus/OpenPegasus.git
 
 SHELL=/bin/bash
 
@@ -62,44 +54,59 @@ SHELL=/bin/bash
 help:
 	@echo "Usage:"
 	@echo ""
-	@echo "  make build    clone OpenPegasus compile it and execute tests."
-	@echo "  make deploy   Deploy, push the server image to an image registry."
-	@echo "  make clean	   Remove the build image from the local machine."
-	@echo "  make clobber  Remove everything created to ensure clean start."
+	@echo "  make all          make build deploy."
+	@echo "  make config-info   OpenPegasus build and run configuration information."
+	@echo "  make build         clone OpenPegasus compile it and execute tests."
+	@echo "      build subtargets:"
+	@echo "        make checkout-repository"
+	@echo "        build-server"
+	@echo "        test-server"
+	@echo "  make deploy        build run image and publish the image."
+	@echo "       deploy subtargets:"
+	@echo "         make build-image   Create the local server run image."
+	@echo "         make provision-server, install repository, certs, etc.."
+	@echo "         make provision-server Install repository, certs, etc.."
+	@echo "         make build-server-image - clean cruft and build the local image"
+	@echo "              make remove-components Clean cruft from build components.."
+	@echo "  make publish       Push the server image to an image registry."
+	@echo "  make clean	        Remove the build image from the local machine."
+	@echo "  make clobber       Remove everything created to ensure clean start."
+	@echo ""
 	@echo "  Docker file for OpenPegasus WBEM Server build.  This file"
 	@echo "    clones the github repository, compiles and tests OpenPegasus "
 	@echo "    and deploys it into a container."
 	@echo ""
-	@echo "Build variables"
-	@echo "  Docker registry = ${DOCKER_REGISTRY}"
-	@echo "  Docker image name = ${BUILD_IMAGE}"
-	@echo "  Docker image version tag = ${DOCKER_TAG}"
+	@echo "Git uri,  OP Docker version, directory variables. Set in build "
+	@echo "  SERVER_IMAGE = The name of the server docker image"
+	@echo "  SERVER_VERSION = The name of the server docker image version"
+	@echo "  PEGASUS_GIT_REPOSITORY The uri of the OpenPegasus github repo"
+	@echo "  PEGASUS_GIT_BRANCH OpenPegasus git branch"
+	@echo "  PEGASUS_GIT_TAG OpenPegasus git tag"
+	@echo "  DOCKER_REGISTRY Public registry where run image published"
+	@echo "  OpenPegasus build variables defined for this build"
 	@echo ""
 	@echo "NOTE: DOCKER_USER and DOCKER_PASSWORD are requested on deploy"
 	@echo ""
-
-# Import OpenPegasus build environment variables both as current env vars and
-# for the makefile
-# You can change the default build environment variables with a file containing
-# the pegasus build environment variables (ex. build_speclai.env)
-#    `make pbf="build_special.env"`
-pbf ?= ${PEGASUS_BUILD_ROOT}/pegasus_build.env
-include $(pbf)
-source $(pbf)
-
-# Import OpenPegasus run environment variables
 
 # Top-level build targets
 .PHONY: all
 all: build deploy
 
-build: clone-repository build-server test-server
-	cd ${PEGASUS_BUILD_ROOT}
+build.done: checkout-repository build-server test-server
+	@echo "done" >$@
+	@echo "Makefile: Done checkout, build, test OpenPegasus"
+
+.PHONY: build
+build: build.done
 	@echo "OpenPegasus cloned, compiled, and tested."
 	@echo "Makefile: Target $@ done."
 
+## TODO: This one should be dependent on the build being complete
+
+deploy.done: provision-server remove-components docker-image-build
+
 .PHONY: deploy
-deploy: build provision-server remove-components docker-build-server-image docker-push-server-image
+deploy: deploy.done
 
 .PHONY: test
 test: test-server
@@ -110,143 +117,174 @@ clean: clean-build docker-remove-server-images
 .PHONY: clobber
 clobber:
 	@echo "Remove build results and git checkout"
+	@echo "Remove *.done files"
 	rm -f *.done
+	@echo "Remove of PEGASUS_HOME data in ${PEGASUS_HOME}"
 	rm -rf ${PEGASUS_HOME}/*
+	@echo "Remove pegasus clone directories ${PEGASUS_HOME}"
 	rm -rf OpenPegasus
 
-# Subtargets for build
-clone-repository:
-	@echo "Cloning OpenPegasus GitHub repository using build container..."
+# Subtargets for build target
+
+checkout-repository.done:
+	@echo "Cloning OpenPegasus GitHub repository..."
 
 	@echo "Set global git config to ignore certificate..."
 	git config --global http.sslverify false
 
-	@echo "Changing to WBEM root directory..."
-	cd ${PEGASUS_BUILD_ROOT}
+	# If tag specified, clone the tag
 
-	@echo "Cloning OpenPegasus github repo main branch to WBEM root directory"
-	@if [ ! -d ${PEGASUS_ROOT} ]; then \
-        git clone ${PEGASUS_GIT_REPOSITORY}; \
-    fi
+	@if [ ! -z ${PEGASUS_GIT_TAG} ]; then \
+		@echo "Cloning OpenPegasus github repo tag to WBEM root directory"; \
+		@if [ ! -d ${PEGASUS_ROOT} ]; then \
+			git clone ${PEGASUS_GIT_REPOSITORY} --branch ${PEGASUS_GIT_TAG}; \
+			@echo "OpenPegasus ${PEGASUS_GIT_REPOSITORY} tag ${PEGASUS_GIT_TAG} cloned."; \
+		fi; \
+	fi
 
+	# If tag not specified, clone and if branch set checkout branch,
 
-build-server:
-	@echo "Building the server using the build container build definitions."
+	@if [ -z ${PEGASUS_GIT_TAG} ]; then \
+		@echo "Cloning OpenPegasus github repo main branch to WBEM root directory"; \
+		@if [ ! -d ${PEGASUS_ROOT} ]; then \
+			git clone ${PEGASUS_GIT_REPOSITORY}; \
+			@echo "OpenPegasus ${PEGASUS_GIT_REPOSITORY} cloned."; \
+		fi; \
+	fi
 
-	@echo "Changing to pegasus root directory..."
-	cd ${PEGASUS_ROOT}
+	@if [ -z ${PEGASUS_GIT_TAG} ]; then \
+        $(MAKE) change-branch; \
+	fi
 
-	@echo "Building the server using the pegasus source..."
-	$(MAKE) -C ${PEGASUS_ROOT} clean
-	$(MAKE) -C ${PEGASUS_ROOT} build
 	echo "done" >$@
+
+checkout-repository-tag:
+	@echo "Cloning OpenPegasus github repo tag to WBEM root directory"
+	@if [ ! -d ${PEGASUS_ROOT} ]; then \
+		git clone ${PEGASUS_GIT_REPOSITORY} --branch ${PEGASUS_GIT_BRANCH}; \
+		echo "OpenPegasus ${PEGASUS_GIT_REPOSITORY} tag ${PEGASUS_GIT_BRANCH} cloned."; \
+	fi
+
+.PHONY: checkout-repository
+checkout-repository: checkout-repository.done
 	@echo "Target $@ complete"
 
+.PHONY: change-branch
+change-branch:
+	@if [ ! -z ${PEGASUS_GIT_BRANCH} ]; then \
+		cd OpenPegasus; \
+		git branch checkout ${PEGASUS_GIT_BRANCH}; \
+		git status; \
+	fi
+	echo "done" >$@.done
+	@echo "Target $@ complete"
+
+.PHONY: build-server
+build-server:
+	@echo "Building the server using pegasus source..."
+	$(MAKE) -C ${PEGASUS_ROOT} clean
+	$(MAKE) -C ${PEGASUS_ROOT} build
+	@echo "List the current build variables in pegasus-build-variables.env..."
+	@export | grep PEGASUS > pegasus-build-variables.env
+	echo "done" >$@.done
+	@echo "Target $@ complete"
+
+.PHONY: test-server
 test-server:
 	@echo "Testing the server in the build container..."
 
-	@echo "Changing to pegasus root directory..."
-	cd ${PEGASUS_BUILD_ROOT}
+	@echo "Create the server build test repository..."
+	$(MAKE) create_test_repository
 
-	@echo "Testing the server build..."
-	$(MAKE) -C ${PEGASUS_BUILD_ROOT} create_test_repository
+	@echo "Testing the server build with ${PEGASUS_TEST_TARGET}..."
+	$(MAKE) -C ${PEGASUS_ROOT} ${PEGASUS_TEST_TARGET}
 
-	# Recreate the repository after tests.  Note that we should actually clear
-	# the home directory of a number of items and leave just what is required
-	$(MAKE) -C ${PEGASUS_BUILD_ROOT} create_test_repository
-	echo "done" >$@
+	# Recreate the repository after tests since it may be dirty
+	$(MAKE) create_test_repository
+	echo "done" >$@.done
 	@echo "Target $@ complete"
 
-
+.PHONY: create_test_repository
 create_test_repository:
-	cd ${PEGASUS_ROOT}
 	@echo "Create the repository..."
 	$(MAKE) -C ${PEGASUS_ROOT} repository
 	# specific repository extensions.
 	$(MAKE) -C ${PEGASUS_ROOT} testrepository
+	@echo "Test repository created"
 
+.PHONY: provision-server
 provision-server:
 	@echo "Provision the server in build container..."
-	@echo "Changing to pegasus root directory..."
-	cd ${PEGASUS_ROOT}
+
 	@echo "Create the  test repository..."
 	$(MAKE) -C ${PEGASUS_ROOT} repository
 	# TODO: This will become optional so that the user can create their
 	# specific repository extensions.
 	$(MAKE) -C ${PEGASUS_ROOT} testrepository
 
+.PHONY: remove-components
 remove-components:
 	@echo "Remove the server unwanted files in the build container..."
 
 	@echo "Remove all test executables"
     # TODO: Should we leave some sort of validity test. Is there one of those?
-	cd ${PEGASUS_HOME}/bin
-	rm -f Test*
+	rm -f ${PEGASUS_HOME}/bin/Test* ${PEGASUS_HOME}/bin/mu
+	rm -f ${PEGASUS_HOME}/stripline ${PEGASUS_HOME}/stripcrs ${PEGASUS_HOME}/chksrc
 
-	cd ${PEGASUS_HOME}
 	@echo "Remove object files"
-	rm -rf obj
-	rm -rf test
+	rm -rf ${PEGASUS_HOME}/obj
 
 	@echo "Remove any trace files"
-	rm -f trace/*
+	rm -f ${PEGASUS_HOME}/trace/*
 
-	@echo Remove unwanted schemas
-	# TODO: This assumes that CIM241 is the desired schema
-	# This can only be used if there is no correspondence to files on the
-	# host since it removes the files from the host also. Blocking for now
-	# FUTURE: Remove all source files. This leaves only doc, test, www
-	@echo "Changing to pegasus root directory..."
-	cd ${PEGASUS_ROOT}
-	rm -rdf src
-	rm -rdf InterfaceArchive
-	rm -rdf Schemas
-	rm -rdf rpm
-	rm -rdf installs
-	rm -rdf mak
+	@echo "Remove unused Test files"
+	rm -f ${PEGASUS_HOME}/test/StressTestClients -rf
+	rm -f ${PEGASUS_HOME}/test/StressTestController -rf
+
+	@echo "Remove unwanted certs"
+	rm -f ${PEGASUS_HOME}/test/testmonth*.* -rf
 
 
-# Subtargets for publish
-docker-build-server-image: remove-components
+# Subtargets for publish target
+
+.PHONY: docker-image-build
+docker-image-build: remove-components
 
 	@echo "Building the WBEM Server image..."
 
 	@echo "Listing the current docker version..."
 	docker version
 
-	@echo "Changing to WBEM root directory..."
-	cd ${PEGASUS_BUILD_ROOT}
+	@echo "Build dockerlocal image (no repository component) image..."
+	docker build --tag ${SERVER_IMAGE}:${SERVER_IMAGE_VERSION} .
 
-	@echo "Build docker image..."
-	docker build --tag ${SERVER_IMAGE}:${DOCKER_SERVER_TAG} .
-
+.PHONY: docker-push-server-image
 docker-push-server-image:
 	@echo "Pushing the built WBEM Server image to private image registry..."
 
 	docker logout
 	docker login -u $${DOCKER_USER}
-	docker tag ${SERVER_IMAGE}:${DOCKER_SERVER_TAG} ${DOCKER_REGISTRY}/${SERVER_IMAGE}:${DOCKER_SERVER_TAG}
-	docker push ${DOCKER_REGISTRY}/${SERVER_IMAGE}:${DOCKER_SERVER_TAG}
+	docker tag ${SERVER_IMAGE}:${SERVER_IMAGE_VERSION} ${DOCKER_REGISTRY}/${SERVER_IMAGE}:${SERVER_IMAGE_VERSION}
+	docker push ${DOCKER_REGISTRY}/${SERVER_IMAGE}:${SERVER_IMAGE_VERSION}
 	docker logout
 
 
 # Subtargets for clean target
+.PHONY: clean-build
 clean-build:
-	@echo "Cleaning the build container..."
+	@echo "Cleaning the pegasus build directories..."
 
-	@echo "Changing to pegasus root directory..."
-	cd ${PEGASUS_ROOT}
-
-	@echo "Clean and clobber the build components"
+	@echo "Clean and clobber the pegasus build components"
 	$(MAKE) -C ${PEGASUS_ROOT} clobber
 	$(MAKE) -C ${PEGASUS_ROOT} clean
 
+.PHONY: docker-remove-server-images
 docker-remove-server-images:
 	@echo "Removing server images..."
 
 	@echo "Removing the repository tagged server image..."
 
-	docker rmi ${DOCKER_REGISTRY}/${SERVER_IMAGE}:${DOCKER_SERVER_TAG}
+	docker rmi ${DOCKER_REGISTRY}/${SERVER_IMAGE}:${SERVER_IMAGE_VERSION}
 
 	@echo "Removing the server image..."
-	docker rmi ${SERVER_IMAGE}:${DOCKER_SERVER_TAG}
+	docker rmi ${SERVER_IMAGE}:${SERVER_IMAGE_VERSION}
