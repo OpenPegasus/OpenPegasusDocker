@@ -6,45 +6,51 @@ USER root
 # Required so that pipes work properly in the Dockerfile
 SHELL [ "/bin/bash", "-o", "pipefail", "-c" ]
 
-# Core updates and Package installations
+# Package installations in stallions for the run package
 RUN apt-get update && \
-    apt-get install -y \
-    ack-grep \
-    build-essential \
-    curl \
-    libssl-dev \
-    vim
+    apt-get install -y  --no-install-recommends \
+    openssl \
+    && apt-get remove -y perl
 
-# Pegasus release file and key paths
-ENV PEGASUS_WBEM_ROOT=/root/wbem
-ENV PEGASUS_HOME=${PEGASUS_WBEM_ROOT}/home
+# Pegasus root directory.  The OpenPegasus git repository and home where
+# results of build are saved is within this directory. These env vars are
+# consistent for all OpenPegasus builds
+# TODO: I think these should come from the builder build and not be repeated
+#       here.  Or maybe just from here but not both
+ENV BUILDDIR=builddir
+ENV PEGASUS_BUILD_ROOT=/root/${BUILDDIR}
+ENV PEGASUS_HOME=${PEGASUS_HOME}
 
-# Create directory structure
+# Create the home directory which will contain the Pegasus runtime
 RUN mkdir -p ${PEGASUS_HOME}
 
-# OpenPegasus run settings
+# Define the build settings
+#
 # Settings below that are flags, with values set to true, enable the action
-# simply through the existance of the variable.  The variables value has no
+# simply through the existence of the variable.  The variables value has no
 # effect.  Note that there are almost NO environment variables to control
-# pegasus execution.  Excution variations are controled through the
-# config variables that can be viewed through the clienc cimconfig
+# pegasus execution.  Execution variations are controlled through the
+# config variables that can be viewed through the client cimconfig
 # and the web admin interface
-# TODO: remove the following after we confirm that they are not needed
-# ENV PEGASUS_DEBUG=true
-# ENV PEGASUS_PLATFORM=LINUX_X86_64_GNU
-# ENV PEGASUS_USE_DEFAULT_MESSAGES=true
-# ENV PEGASUS_HAS_SSL=true
-# ENV PEGASUS_CLIENT_TRACE_ENABLE=true
-# ENV PEGASUS_ENABLE_EXECQUERY=true
-# ENV PEGASUS_PAM_AUTHENTICATION=true
-# ENV OPENSSL=/usr
-ENV PATH=${PEGASUS_HOME}/bin:$PATH
 
-# Add makefile for using this build image
-COPY ./home ${PEGASUS_HOME}
+# ADD OpenPegasus bin directory to PATH to get access to runtime components
+ENV PATH=$PATH:${PEGASUS_HOME}/bin
+
+# Add the OpenPegasus library to the LD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH=${PEGASUS_HOME}/lib:${LD_LIBRARY_PATH}
+
+# TODO: Does this have to be part of the run time environment???
+ENV PEGASUS_HAS_SSL=true
+
+# OpenPegasus make target to execute post build tests. Can be any of the
+# targets defined in OpenPegasus Makefile or TestMakefile
+ENV PEGASUS_TEST_TARGET=alltests
+
+# add the pegasus build results to the run image
+COPY ./openpegasus_home ${PEGASUS_HOME}
 
 # Build folder
-WORKDIR ${PEGASUS_WBEM_ROOT}
+WORKDIR ${PEGASUS_BUILD_ROOT}
 
 # Build the binaries and run the cimserver
 ENTRYPOINT ["/bin/bash", "-l", "-c"]
