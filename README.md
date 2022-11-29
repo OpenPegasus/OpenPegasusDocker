@@ -4,9 +4,9 @@
 
 # [![GitHub version](https://badge.fury.io/gh/Naereen%2FStrapDown.js.svg)](https://github.com/Naereen/StrapDown.js)
 
-[![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://lbesson.mit-license.org/)
+# [![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://lbesson.mit-license.org/)
 
-[![Docker](https://badgen.net/badge/icon/docker?icon=docker&label)](https://https://docker.com/)
+# [![Docker](https://badgen.net/badge/icon/docker?icon=docker&label)](https://https://docker.com/)
 
 ## Introduction
 
@@ -14,12 +14,12 @@ This repository contains the docker files and makefiles to create build docker
 images for:
 
 * Building an OpenPegasus build image ( the build image) in which an OpenPegasus
-  wbem server run image can be built. This image is based on Ubuntu  with the
+  wbem server run image can be built. This image is based on Ubuntu and the gcc toolset  with the
   Dockerfile, and Makefile to actually get OpenPegasus from the the github
   repository, build it, clean up the results and test the created OpenPegasus,
   and build a new image (OpenPegasusServer) that contains a runnable
   OpenPegasus executable with CIM repository, etc.
-* Building OpenPegasus in a container such that OpenPegasus WBEM server starts
+* Building OpenPegasus in a container such that the OpenPegasus WBEM server starts
   and runs when the Docker container is started from this image.
 
 OpenPegasus is an implementation of DMTF's Storage Management Initiative (SMI)
@@ -28,6 +28,17 @@ contained in the OpenPegasus repository of this OpenPegasus project.
 
 Build and run images are stored in the Docker repository defined in the
 Dockerfile (currently the docker repository kschopmeyer) and can be freely downloaded.
+
+This set of docker configuration tools allows a significant number of options in
+building the WBEM server including:
+
+1. Choosing the git OpenPegasus version and the git branch to get the OpenPegasus source files
+2. All of the OpenPegasus build options that define the built server.  These are defined
+   in the file pegasus-build-vars.env with documentation for each build configuration
+   parameter.  Note that by defining the build configuration variables in a separate
+   file, they can be modified each time the build image is run.  The build variables
+   can also be modified after the build images has started by modifying individual
+   environment variables in the running build container.
 
 STATUS: Limited release 0.1.2.
 
@@ -69,37 +80,57 @@ defines the download.
 
 The WBEM Build makefile supports the following targets.
 
-NOTE: The lint will only occur if the docker lint tool TODO is installed.
+NOTE: The lint will only occur if the docker lint tool  is installed.
 
 ```
 make lint     Lint the Dockerfile.
 make build    Build the build image.
-make deploy   Deploy, push the build image to an image registry.
+make deploy   Build the run image.
+make publish  Publish the build image to the remote docker repository.
 make clean    Remove the build image from the local machine.
 ```
 
 ### How to Build the OpenPegasus WBEM Server Image
 Using the build image the server image can now be built.
 
-Building the OpenPegasus WBEM Server Image involves:
+Building the OpenPegasus WBEM Server image involves the following steps run within
+the build container:
 1. Retrieving the OpenPegasus Source code, etc. from github OpenPegasus repository
 2. Building OpenPegasus from this source code.
    1. Since the build process for OpenPegasus involves setting a number of
       environment variables that control the build, A set of these variables
-      is defined in the Dockerfile.
+      is defined in pegasus_build_vars.env.
    2. Running tests on the build OpenPegasus code to confirm that the build
       was executed properly.
    3. Cleaning unwanted components out of the build result to minimize the
       built image. This includes removing the intermediate build components,
-      the OpenPegasus source package, the test files and other temporary
-      components.
+      and most of the test executables/files and other temporary components.
    4. Provisioning the WBEM server with a CIM model and possibly building and
       installing providers for the target environment.
 
-Run the following command line.
+In short, a OpenPegasus WBEM server image can be created by just running the
+following
+
+1. Clone this repository to your local machine
+2. Create the build image which consists of Ubuntu, updates to Ubuntu and
+   build tools to compile OpenPegasus source code
+3. Run the build container an build OpenPegasus
+4. Deploy the OpenPegasus server container
+
+TODO: Does this also get Ubuntu image in the make build step???
+
+Thus the simplest set of commands to create an OpenPegasus server container are:
 
 ```console
-sudo make start-build-container
+git clone https://github.com/OpenPegasus/OpenPegasusDocker.git
+make build
+make run-build-container
+# go to the console in the running build container
+make build
+make deploy
+# exit the build container
+make run-server-container
+```
 
 # The build container start can also be done with the following docker command:
   sudo docker run -it --rm -v /home/$USER/.ssh:/root/.ssh -v /var/run/docker.sock:/var/run/docker.sock smi-build:tag /bin/bash
@@ -113,10 +144,10 @@ following make commands.
   make lint                    Lint the Dockerfile.
   make build                   Build the build image.
   make deploy                  Deploy, push the build image to a docker image registry.
-  make clean	                Remove the build image from the local machine.
-  make start-build-container	Run the build the pegasus server image.
-  make start-run-container	    Run OpenPegasus WBEM server in container
-                                with default HTTP and HTTPS ports
+  make clean	               Remove the build image from the local machine.
+  make run-build-container     Run the build the pegasus server image.
+  make run-server-container    Run OpenPegasus WBEM server in container
+                               with default HTTP and HTTPS ports
 ```
 
 A logical sequence to build the
@@ -125,12 +156,16 @@ A logical sequence to build the
 the pegasus tests against the built server.
 
 "make deploy": perform all the above build tasks plus builds the wbem-server
-image which is presently pushed to a private image registry.
+image which is pushed to an image registry.
 
 The same build tasks can also be specified on the docker command line as shown below.
 
+The build command requires the --env-file option and a predefined file that defines
+the OpenPegasus build options which are all environment variables.  A default
+environment file pegasus-build-vars.env is part of this repository.
+
 ```console
-sudo docker run -it --rm -v /home/<username>/.ssh:/root/.ssh -v /var/run/docker.sock:/var/run/docker.sock smi-build:tag "make build"
+sudo docker run -it --rm -v /home/<username>/.ssh:/root/.ssh --env-file -v /var/run/docker.sock:/var/run/docker.sock smi-build:<tag> "make build"
 ```
 
 Adding /bin/bash at the end of the command causes the server to start at the bash
@@ -146,9 +181,7 @@ make deploy
 ```
 
 
-TODO
-
-The make command for the build server image will build the server image smi-server:0.1.2 on your local machine.
+The make command for the build server image will build the server image smi-server:<tag> on your local machine.
 
 If you wish to skip this step you can use one of the existing build images
 such as this one on Dockerhub.
@@ -156,81 +189,98 @@ such as this one on Dockerhub.
 The OpenPegasus public build image build by this set of utilities is:
 
 ```
-kschopmeyer/openpegasus-build:0.1.1
+kschopmeyer/openpegasus-build:0.1.2
 ```
 
 The corresponding image for the running server is:
 
 ```
-kschopmeyer/openpegasus-server:0.1.1
+kschopmeyer/openpegasus-server:0.1.2
 ```
 
-NOTE: Currently the build and server image are in a user repository kschopmeyer
-awaiting Docker approval of a public repository to be named OpenPegasus.
+NOTE: Currently the build and server image are in a user repository kschopmeyer.
 
 ```
-kschopmeyer/openpegasus-build:0.1.1
+kschopmeyer/openpegasus-build:0.1.2
 ```
 
 ## How to Run the Server Image
 
-To run the server simply execute this command line.
+To run the server simply execute this command line . This runs the container and
+starts the OpenPegasus web server in the container.
 
 ```console
-sudo docker run -it --rm -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 kschopmeyer/openpegasus-server:0.1.2 /bin/bash
+sudo docker run -it --rm -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 kschopmeyer/openpegasus-server:0.1.2
 
 ```
 
-or the make target start-run-container.
+or the make target  make run-server-container.
 
-or to load the server image and start OpenPegasus when the server starts enter the run command
-without the last parameter ("/bin/bash")
+To run the server image and not automatically start OpenPegasus when the server starts enter the run command
+with the last parameter ("/bin/bash")
 
 The above command starts the server
 
 ```console
-sudo docker run -it --rm -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 smi-server:0.1.2
+sudo docker run -it --rm -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 kschopmeyer/openpegasus-server:0.1.2
 ```
 
-The bash shell will have the SMI root directory as the current working
-directory.  From there you can execute any cimserver or cimcli commands.  To
-start the server simply execute the following.
+The bash shell will have the directory containing pegasus components root
+directory as the current working directory.  From there you can execute any
+cimserver or cimcli commands.  To start the server simply execute the
+following.
 
 ```console
 cimserver
 ```
 
-And to stop the server and return to the container console:
+And to stop the wbem server and return to the container console:
 
 ```console
 cimserver -s
 ```
-The server container will go through a shutdown process and return to the
+
+The following command will also indicate whether the server is running or not.
+
+```console
+cimserver --status
+```
+
+The running server can be accessed from within the container using the
+OpenPegasus utility cimcli that has commands to execute requests on the server.
+
+The simplest command is "cimcli ns" that displays the namespaces defined for
+the wbem server and is a good indicator that the server is working correctly.
+
+The command line "exit" command can be used to shut down the server container will go through a shutdown process and return to the
 console interface.
 
-The server will start and print out to the console that it is listening on the default ports 5988 (http) and 5989 (https).
-
+The server will start and print out to the console that it is listening on the
+default ports 5988 (http) and 5989 (https).
 
 ## Configuration of OpenPegasus in the run image
 
-The default run server has the following characteristics as defined by the
-variables in the the server build Docker file (Docker file in the repository)
+The default run server (define with the pegasus-build-vars.env file) has the
+following characteristics as defined by the variables in the the server build
+Docker file (Docker file in the repository)
 
 1. Both https and http available. The default defined in Dockerfile is
 port 15988 for http and 15989 for https.
 
-2. A set of locally define  certificates
+2. A set of locally define SSL  certificates
 
-3 The CIM repository is based on what has been built into the OpenPegasus source
-repository for testing.  Currently
-it is the CIM repository for CIM Schema 2.41.0 and a set of extensions for
-testing OpenPegasus including a number of classes and corresponding pegasus
-test providers.  This is scattered over a number of CIM namespaces including
-an Interop namespace root/interop.
+3 The CIM repository that is based on what has been built into the OpenPegasus source
+repository for testing.  Currently it is the CIM repository for CIM Schema
+2.41.0 and a set of extensions for testing OpenPegasus including a number of
+classes and corresponding pegasus test providers.  This is scattered over a
+number of CIM namespaces including an Interop namespace root/PG_InterOp.
 
 4. OpenPegasus wbem server so that once the server is running in the run
 container, overall information on the server can be viewed on the containers
 URI and OpenPegasus ports
+
+5. The OpenPegasus web server which allows remotely viewing and modifying
+characteristics of the server running at http://localhost:15988
 
 ## Frequently asked questions
 Please see [FAQ.md](./FAQ.md) for frequently asked questions.
