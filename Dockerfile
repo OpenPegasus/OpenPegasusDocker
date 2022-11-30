@@ -97,6 +97,14 @@ RUN mkdir -p ${PEGASUS_HOME} && \
 # command line utilities and tests.
 ENV PATH=${PEGASUS_HOME}/bin:$PATH
 
+################################################################
+# TODO: Remove all the following variables from this file. They are correctly
+# defined in the pegasus_build.env file and that file is attached to the
+# build container when the container is started. For the moment they are
+# commented out until testing is complete.
+
+# NOTE: Running the build container requires that the option --env-file be
+# defined.
 #
 # OpenPegasus compile variables. See OpenPegasus documentation for more
 # detailed information on particular variables.
@@ -123,14 +131,14 @@ ENV PEGASUS_PLATFORM=LINUX_X86_64_GNU
 # ssl, pam, and pegasus usergroup
 
 # If set, a version of OpenPegasus that supports SSL (i.e., https) is built.
-ENV PEGASUS_HAS_SSL=true
+#ENV PEGASUS_HAS_SSL=true
 
-# TODO
-ENV OPENSSL=/usr
+# TODO clarify this env var
+#ENV OPENSSLHOME_=/usr
 
 # Enables support for PAM-(Pluggable Authentication Modules) based authentication.
 # Default is false
-ENV PEGASUS_PAM_AUTHENTICATION=true
+#ENV PEGASUS_PAM_AUTHENTICATION=true
 
 # Builds a version of OpenPegasus that allows an administrator to restrict access
 # to CIM operations to members of a designated set of groups.  Refer to the
@@ -140,26 +148,24 @@ ENV PEGASUS_PAM_AUTHENTICATION=true
 
 # When this environment variable is set, processing of ExecQuery operations is
 # enabled. When not set, ExecQuery operation requests get a NotSupported response.
-ENV PEGASUS_ENABLE_EXECQUERY=true
+#ENV PEGASUS_ENABLE_EXECQUERY=true
 
 # When this variable is set to false, support for Indication Subscription filters
 # that have CQL as the language is disabled. It does not remove CQL from the build.
-ENV PEGASUS_ENABLE_CQL=true
+#ENV PEGASUS_ENABLE_CQL=true
 
 # Enable the provider manager for providers that use the CMPI interface
 # from providers to the OpenPegasus server
 # If set to true, the CMPI_Provider manager is created and cmpi providers
 # included in the test environment. Default is true
-ENV PEGASUS_ENABLE_CMPI_PROVIDER_MANAGER=true
+#ENV PEGASUS_ENABLE_CMPI_PROVIDER_MANAGER=true
 
-# Logging - Enable syslog output for OpenPegasus logging
-# If true, enable the audit-logger that logs all operations that modify
-# entities within the environement
+# TODO
 #ENV PEGASUS_ENABLE_AUDIT_LOGGER=true
 
 # If set, OpenPegasus will be built to send log messages to the system logger
 # (syslog). Otherwise, log messages will be sent to OpenPegasus specific log files.
-ENV PEGASUS_USE_SYSLOGS=true
+#ENV PEGASUS_USE_SYSLOGS=true
 
 # This variable is used for configuring the Interop namespace name. This option
 # helps to establish a consistent Interop Namespace as mentioned in DMTF
@@ -168,13 +174,27 @@ ENV PEGASUS_USE_SYSLOGS=true
 # values are root/PG_Interop, root/interop or interop.  The default interop namespace if
 # this not set is root/PG_Interop.
 # Note: Only limited pegasus internal tests can be run if
-# the interop namespace is not set to root/PG_interop since some test verification
+# the interop namespace is not set to root/PG_Interop since some test verification
 # depends on the specific stringroot/PG_Interop
-#ENV PEGASUS_INTEROP_NAMESPACE=root/PG_interop
+#ENV PEGASUS_INTEROP_NAMESPACE=root/PG_Interop
 
-# Builds a debug version of OpenPegasus. Concurrently, this flag controls a) enabling
-# compiler specific debug flags and b) the inclusion of debug-specific functionality.
-#ENV PEGASUS_DEBUG=true
+#
+#  Debug and trace control variables
+#
+# Debug build options
+# Enable the compiler debug mode which provides additional internal tests
+# of the server and some displays. Default is false
+#PEGASUS_DEBUG=false
+
+# The following variable set to true reduces size by not including some
+# information in the trace output.  TODO: This may not be documented in
+# the options document. Default is false
+# ENV PEGASUS_NO_FILE_LINE_TRACE=true
+# Enable the trace facility in the pegasus client code. Default is false
+#PEGASUS_CLIENT_TRACE_ENABLE=true
+# Causes compiler to remove all PEGASUS_ASSERT statements. default is false
+# TODO test
+#PEGASUS_NOASSERTS=false
 
 # If true, the CIM Server is compiled without method enter and exit trace statements.
 # Trace Level 5 will continue to be accepted as a valid trace level but, without the
@@ -202,7 +222,7 @@ ENV PEGASUS_CLIENT_TRACE_ENABLE=true
 # built in XML mode); BIN (causes the repository to be built in binary mode).
 # Use cimconfig to modify the runtime environment.
 # We use BIN because it is significantly smaller than XML and faster
-ENV PEGASUS_REPOSITORY_MODE=BIN
+#ENV PEGASUS_REPOSITORY_MODE=BIN
 
 # If set the Repository Compression logic is built and enabled and compressed
 # and non compressed repositories are supported. If not set then compressed
@@ -245,13 +265,12 @@ ENV PEGASUS_REPOSITORY_MODE=BIN
 # This is considered experimental and for WQL only.
 # ENV PEGASUS_SNIA_EXTENSIONS=true
 
+# END OF COMMENTED OUT ENV statements.
+
 # Add the Makefile and Dockerfile for building the server image based on
 # the build image
 COPY ./Makefile_wbemserver-build ${PEGASUS_BUILD_ROOT}/Makefile
 COPY ./Dockerfile_wbemserver-build ${PEGASUS_BUILD_ROOT}/Dockerfile
-####COPY ./pegasus_build.env ${PEGASUS_BUILD_ROOT}/pegasus_build.env
-###COPY ./pegasus_run.env ${PEGASUS_BUILD_ROOT}/pegasus_run.env
-###COPY ./setup-build-variables.sh ${PEGASUS_BUILD_ROOT}/setup-build-variables.sh
 
 # OpenPegasus Build folder
 WORKDIR ${PEGASUS_BUILD_ROOT}

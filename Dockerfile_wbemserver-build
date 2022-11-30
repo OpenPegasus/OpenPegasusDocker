@@ -12,16 +12,17 @@ RUN apt-get update && \
     openssl \
     && apt-get remove -y perl
 
-# Pegasus root directory.  The OpenPegasus git repository and home where
+# Pegasus directories.  The OpenPegasus git repository and home where
 # results of build are saved is within this directory. These env vars are
 # consistent for all OpenPegasus builds
-# TODO: I think these should come from the builder build and not be repeated
+# TODO: I think these should come from the builder docker and not be repeated
 #       here.  Or maybe just from here but not both
 ENV BUILDDIR=builddir
 ENV PEGASUS_BUILD_ROOT=/root/${BUILDDIR}
 ENV PEGASUS_HOME=${PEGASUS_HOME}
 
-# Create the home directory which will contain the Pegasus runtime
+# Create the home directory which will contain the Pegasus runtime during
+# the build
 RUN mkdir -p ${PEGASUS_HOME}
 
 # Define the build settings

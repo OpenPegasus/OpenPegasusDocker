@@ -39,7 +39,7 @@ help:
 	@echo "  make deploy                Deploy, push the build image to a docker image registry."
 	@echo "  make clean	                Remove the build image from the local machine."
 	@echo "  make run-build-image	    Run the build the pegasus server image."
-	@echo "  make run-pegasus-image	    Run OpenPegasus WBEM server in container"
+	@echo "  make run-server-image	    Run OpenPegasus WBEM server in container"
 	@echo "                             with default HTTP and HTTPS ports"
 	@echo ""
 	@echo "  Docker file for OpenPegasus WBEM Server build.  This file"
@@ -56,8 +56,8 @@ help:
 	@echo "NOTE: DOCKER_USER and DOCKER_PASSWORD are requested on deploy"
 	@echo ""
 
-.PHONY: build-build-image
-build-build-image:
+.PHONY: create-build-image
+create-build-image:
 	@echo "Building the docker build image..."
 	docker build -t ${DOCKER_REGISTRY}/${BUILD_IMAGE}:$(DOCKER_TAG) .
 
@@ -77,42 +77,47 @@ clean-build-image:
 	@echo "Removing the build image ${BUILD_IMAGE}:$(DOCKER_TAG) ..."
 	-docker rmi ${BUILD_IMAGE}:$(DOCKER_TAG)
 
-
 .PHONY: run-build-image
 run-build-image:
-	@echo start the build image ${DOCKER_REGISTRY}/${BUILD_IMAGE}:${DOCKER_TAG}
+	@echo Run the build image ${DOCKER_REGISTRY}/${BUILD_IMAGE}:${DOCKER_TAG}
 	sudo docker run -it --rm \
 		-v /home/${USER}/.ssh:/root/.ssh \
+		--env-file pegasus_build.env \
 		-v /var/run/docker.sock:/var/run/docker.sock ${DOCKER_REGISTRY}/${BUILD_IMAGE}:${DOCKER_TAG} /bin/bash
 
-# This is obsolete target but can be used to setup crash save
-.PHONY: run-run-image
-run-run-image:
-	@echo start the local server container image ${DOCKER_REGISTRY}/${RUN_IMAGE}:${DOCKER_TAG}
+.PHONY: run-server-image
+run-server-image:
+	@echo run the local server container image ${RUN_IMAGE}:${DOCKER_TAG}
 	echo http port = 15988, https port = 15989
 	sudo docker run -it --rm  -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 \
 		--init --ulimit core=-1 \
 		--mount type=bind,source=/tmp/,target=/tmp/ \
-		--log-driver=syslog --name pegasus  ${RUN_IMAGE}:${DOCKER_TAG} /bin/bash
+		--log-driver=syslog --name pegasus  ${RUN_IMAGE}:${DOCKER_TAG}
 
+# NOTE: Set the last item in the above command to /bin/bash to start the runtime environment
+# in bash. The current setting starts cimserver upon container startup and shuts it down when
+# the container is stopped.
+
+# TODO: This target specifies the image name including the DOCKER_REGISTRY so only
+#       really works when image has been published.
 .PHONY: run-openpegasus-image
 run-openpegasus-image:
-	@echo Example start the OpenPegasus build image to build the OpenPegasus server image..."
+	@echo Example: run the OpenPegasus build image to build the OpenPegasus server image..."
 	echo http port = 15988, https port = 15989
 	sudo docker run -it --rm  -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 \
 	    --log-driver=syslog --name pegasus  ${DOCKER_REGISTRY}/${RUN_IMAGE}:${DOCKER_TAG} /bin/bash
 
+.PHONY: lint
 lint:
 	@echo "Linting Dockerfile if hadolint exists..."
 	# Allow hadolint to fail or not be found
 	-hadolint Dockerfile
-.PHONY: lint
 
-build: lint build-build-image
 .PHONY: build
+build: lint create-build-image
 
-deploy: build publish-build-image
 .PHONY: deploy
+deploy: build publish-build-image
 
-clean: clean-build-image
 .PHONY: clean
+clean: clean-build-image
