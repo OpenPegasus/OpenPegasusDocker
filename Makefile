@@ -82,7 +82,7 @@ run-build-image:
 	@echo Run the build image ${DOCKER_REGISTRY}/${BUILD_IMAGE}:${DOCKER_TAG}
 	sudo docker run -it --rm \
 		-v /home/${USER}/.ssh:/root/.ssh \
-		--env-file pegasus-build-vars.env \
+		--env-file=pegasus-build-vars.env \
 		-v /var/run/docker.sock:/var/run/docker.sock ${DOCKER_REGISTRY}/${BUILD_IMAGE}:${DOCKER_TAG} /bin/bash
 
 .PHONY: run-server-image
@@ -115,6 +115,7 @@ lint:
 
 .PHONY: build
 build: lint create-build-image
+	@echo "You can start build container with \"make run-build-image\"."
 
 .PHONY: deploy
 deploy: build publish-build-image
