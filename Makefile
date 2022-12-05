@@ -59,7 +59,8 @@ help:
 .PHONY: create-build-image
 create-build-image:
 	@echo "Building the docker build image..."
-	docker build -t ${DOCKER_REGISTRY}/${BUILD_IMAGE}:$(DOCKER_TAG) .
+	# docker rmi ${DOCKER_REGISTRY}/${BUILD_IMAGE}:$(DOCKER_TAG)
+	docker build -rm -t ${DOCKER_REGISTRY}/${BUILD_IMAGE}:$(DOCKER_TAG) .
 
 .PHONY: publish-build-image
 publish-build-image:
