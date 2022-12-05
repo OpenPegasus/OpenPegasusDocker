@@ -180,8 +180,7 @@ test-server:
 	@echo "Testing the server build with ${PEGASUS_TEST_TARGET}..."
 	$(MAKE) -C ${PEGASUS_ROOT} ${PEGASUS_TEST_TARGET}
 
-	# Recreate the repository after tests since it may be dirty
-	$(MAKE) create_test_repository
+	@echo "NOTE: Docker repository not clean. Contains data from test."
 	echo "done" >$@.done
 	@echo "Target $@ complete"
 
