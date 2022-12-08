@@ -59,8 +59,7 @@ help:
 .PHONY: create-build-image
 create-build-image:
 	@echo "Building the docker build image..."
-	# docker rmi ${DOCKER_REGISTRY}/${BUILD_IMAGE}:$(DOCKER_TAG)
-	docker build -rm -t ${DOCKER_REGISTRY}/${BUILD_IMAGE}:$(DOCKER_TAG) .
+	docker build --rm -t ${DOCKER_REGISTRY}/${BUILD_IMAGE}:$(DOCKER_TAG) .
 
 .PHONY: publish-build-image
 publish-build-image:
@@ -93,7 +92,7 @@ run-server-image:
 	sudo docker run -it --rm  -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 \
 		--init --ulimit core=-1 \
 		--mount type=bind,source=/tmp/,target=/tmp/ \
-		--log-driver=syslog --name pegasus  ${RUN_IMAGE}:${DOCKER_TAG}
+		--log-driver=syslog --name pegasus  ${RUN_IMAGE}:${DOCKER_TAG} /bin/bash
 
 # NOTE: Set the last item in the above command to /bin/bash to start the runtime environment
 # in bash. The current setting starts cimserver upon container startup and shuts it down when
@@ -106,7 +105,7 @@ run-openpegasus-image:
 	@echo Example: run the OpenPegasus build image to build the OpenPegasus server image..."
 	echo http port = 15988, https port = 15989
 	sudo docker run -it --rm  -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 \
-	    --log-driver=syslog --name pegasus  ${DOCKER_REGISTRY}/${RUN_IMAGE}:${DOCKER_TAG} /bin/bash
+		--log-driver=syslog --name pegasus  ${DOCKER_REGISTRY}/${RUN_IMAGE}:${DOCKER_TAG} /bin/bash
 
 .PHONY: lint
 lint:
