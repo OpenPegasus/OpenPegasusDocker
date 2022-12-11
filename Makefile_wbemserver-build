@@ -11,7 +11,7 @@
 # limitations under the License.
 
 # This make file is copied into the container as Makefile and provides the
-# targets to build and test OpenPegasus and create the resulting
+# targets to build and test OpenPegasus and to create the resulting
 # server image which will contain an executable OpenPegasus image.
 #
 
@@ -27,21 +27,18 @@
 #
 # Notes:
 #
-# 1. Build only runs the build and tests the server.  The folder home will
-#    contain the built server.
-# 2. Publish will build, test, create the server image and push it to an image
-#    registry.
+# 1. Build only runs the build and tests the server.  The $(PEGASUS_HOME) contains
+#    the WBEM server run components, and repository.
+# 2. Deploy will build, test, and create the server image and push it to the
+
+# 2. Publish will push a copy of the pegasus wbem server run image to a named
+#    remote registry.
 # 3. The ~/.ssh folder and the Docker-in-Docker folder need to be mapped
 #    volumes when running a make command.
 #
-# The build container can be started with the following command
-#    sudo docker run -it --rm \
-#                    -v /home/<username>/.ssh:/root/.ssh \
-#                    -v /var/run/docker.sock:/var/run/docker.sock \
-#                         wbem-build:tag \
-#                         "make build" \
-#                         bash
-
+# 4. See the targets in the Makefile that builds the build image for detailed
+#    examples of the docker commands to start the build image and the
+#    run image.
 
 # No built-in rules needed:
 MAKEFLAGS += --no-builtin-rules
@@ -104,6 +101,8 @@ build: build.done
 	@echo "Makefile: Target $@ done."
 
 deploy.done: build.done provision-server remove-components docker-image-build
+	@echo "OpenPegasus run image provisioned and image created."
+	@echo "Makefile: Target $@ done."
 
 .PHONY: deploy
 deploy: deploy.done
@@ -184,9 +183,9 @@ build-server: build-server.done
 .PHONY: test-server
 test-server: build-server.done
 	@echo "Testing the server in the build container..."
-
 	@echo "Set Interop Namespace to root/PG_InterOp..."
 	@export PEGASUS_INTEROP_NAMESPACE="root/PG_InterOp"
+
 	@echo "Create the server build test repository..."
 	@$(MAKE) create_test_repository
 
@@ -201,6 +200,10 @@ test-server: build-server.done
 	@echo "done" >$@.done
 	@echo "Target $@ complete"
 
+# Build the CIM repository define for the OpenPegasus testsuite.  This is
+# based on the the targets defined in pegasus/TestMakefile. This defines the
+# interop namespace as PG_InterOp and adds a number of other test namespaces
+# to support the OpenPegasus test suite.
 .PHONY: create_test_repository
 create_test_repository:
 	@echo "Create the repository and install providers..."
@@ -208,7 +211,6 @@ create_test_repository:
 	# specific repository  Schema extensions extensions.
 	$(MAKE) -C ${PEGASUS_ROOT} testrepository
 	@echo "Test repository created"
-
 
 # Default provision-server.  This creates the repository and test repository
 # that are the same as the test repository except that the namespace is the

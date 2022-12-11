@@ -20,16 +20,6 @@ RUN apt-get update && \
 ENV PEGASUS_RUN_DIR="/root/OpenPegasusRun"
 ENV PEGASUS_RUN_ROOT=${PEGASUS_RUN_DIR}
 
-# Define the OpenPegasus run settings. These are minimal.
-#
-# Settings below that are flags, with values set to true, enable the action
-# simply through the existence of the variable.  The variables value has no
-# effect.  Note that there are almost NO environment variables to control
-# pegasus execution.  Execution variations are controlled through the
-# config variables that can be viewed through the client cimconfig utility and
-# a terminal or the OpenPegasus web admin interface which is on the same
-# uri/ports and the running OpenPegasus
-
 # Add OpenPegasus bin directory to PATH to get access to runtime components
 ENV PATH=$PATH:${PEGASUS_RUN_ROOT}/bin
 
@@ -41,10 +31,11 @@ COPY ./openpegasus_home ${PEGASUS_RUN_ROOT}
 # Copy the build environment variables as record of the build configuration
 COPY ./pegasus-build-variables.env ${PEGASUS_RUN_ROOT}
 
-# Build folder
+# Pegasus Run components directory. This directory contains the bin, lib,
+# repository, , Revocation list, and trace directories and the certificates.
+#
 WORKDIR ${PEGASUS_RUN_ROOT}
 
-# Build the binaries and run the cimserver
 # Set to start server on startup. Can override on command line run command
 ENTRYPOINT ["/bin/bash", "-l", "-c"]
 CMD ["cimserver; tail -f /dev/null"]

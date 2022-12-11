@@ -121,6 +121,7 @@ run-server-image-terminal:
 		--mount type=bind,source=/tmp/,target=/tmp/ \
 		--log-driver=syslog --name pegasusterminal  ${RUN_IMAGE}:${DOCKER_TAG} /bin/bash
 
+
 .PHONY: lint
 lint:
 	@echo "Linting Dockerfile if hadolint exists..."
