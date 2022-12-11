@@ -1,4 +1,6 @@
-######## Start builder #######
+######## Dockerfile for OpenPegasus WBEM server #######
+# This Dockerfile is used to build the run time image.
+
 FROM ubuntu:20.04
 
 USER root
@@ -6,18 +8,19 @@ USER root
 # Required so that pipes work properly in the Dockerfile
 SHELL [ "/bin/bash", "-o", "pipefail", "-c" ]
 
-# Package installations in stallions for the run package
+# Package installations to support OpenPegasus run time image
 RUN apt-get update && \
     apt-get install -y  --no-install-recommends \
     openssl \
-    && apt-get remove -y perl
+    && rm -rf /var/lib/apt/lists*
 
 # Pegasus directories.  The OpenPegasus run directory is the single directory
-# that will contain the lib and bin directorys of the OpenPegasus runtime
+# that will contain the lib and bin directories of the OpenPegasus run-time
 # in the run image
-ENV PEGASUS_RUN_ROOT=${PEGASUS_BUILD_ROOT}
+ENV PEGASUS_RUN_DIR="/root/OpenPegasusRun"
+ENV PEGASUS_RUN_ROOT=${PEGASUS_RUN_DIR}
 
-# Define the OpenPegasus  run settings. These are minimal.
+# Define the OpenPegasus run settings. These are minimal.
 #
 # Settings below that are flags, with values set to true, enable the action
 # simply through the existence of the variable.  The variables value has no
@@ -30,11 +33,8 @@ ENV PEGASUS_RUN_ROOT=${PEGASUS_BUILD_ROOT}
 # Add OpenPegasus bin directory to PATH to get access to runtime components
 ENV PATH=$PATH:${PEGASUS_RUN_ROOT}/bin
 
-# Add the OpenPegasus library to the LD_LIBRARY_PATH
+# Add the OpenPegasus library to the LD_LIBRARY_PATH to provide access to libs
 ENV LD_LIBRARY_PATH=${PEGASUS_RUN_ROOT}/lib:${LD_LIBRARY_PATH}
-
-# TODO: Does this have to be part of the run time environment???
-ENV PEGASUS_HAS_SSL=true
 
 # Add the pegasus build results to the run image root directory
 COPY ./openpegasus_home ${PEGASUS_RUN_ROOT}
@@ -46,5 +46,5 @@ WORKDIR ${PEGASUS_RUN_ROOT}
 
 # Build the binaries and run the cimserver
 # Set to start server on startup. Can override on command line run command
-# ENTRYPOINT ["/bin/bash", "-l", "-c"]
+ENTRYPOINT ["/bin/bash", "-l", "-c"]
 CMD ["cimserver; tail -f /dev/null"]

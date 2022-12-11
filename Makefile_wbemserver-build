@@ -66,7 +66,7 @@ help:
 	@echo "         make provision-server, install repository, certs, etc.."
 	@echo "         make provision-server Install repository, certs, etc.."
 	@echo "         make build-server-image - clean cruft and build the local image"
-	@echo "              make remove-components Clean cruft from build components.."
+	@echo "         make remove-components & clean cruft from build components.."
 	@echo "  make publish       Push the server image to an image registry."
 	@echo "  make clean	        Remove the build image from the local machine."
 	@echo "  make clobber       Remove everything created to ensure clean start."
@@ -82,9 +82,11 @@ help:
 	@echo "  PEGASUS_GIT_BRANCH OpenPegasus git branch"
 	@echo "  PEGASUS_GIT_TAG OpenPegasus git tag"
 	@echo "  DOCKER_REGISTRY Public registry where run image published"
+	@echo "  PEGASUS_TEST_TARGET Defines tests to run
+	@echo """
 	@echo "  OpenPegasus build variables defined for this build"
 	@echo ""
-	@echo "NOTE: DOCKER_USER and DOCKER_PASSWORD are requested on deploy"
+	@echo "NOTE: DOCKER_USER and DOCKER_PASSWORD are requested on publish"
 	@echo ""
 
 # Top-level build targets
@@ -98,14 +100,15 @@ build.done: checkout-repository build-server test-server
 .PHONY: build
 build: build.done
 	@echo "OpenPegasus cloned, compiled, and tested."
+	@echo "done" >$@
 	@echo "Makefile: Target $@ done."
 
-## TODO: This one should be dependent on the build being complete
-
-deploy.done: provision-server remove-components docker-image-build
+deploy.done: build.done provision-server remove-components docker-image-build
 
 .PHONY: deploy
 deploy: deploy.done
+	@echo "done" >$@
+	@echo "Makefile: Target $@ done."
 
 .PHONY: test
 test: test-server
@@ -129,10 +132,10 @@ checkout-repository.done:
 	@echo "Cloning OpenPegasus GitHub repository..."
 
 	@echo "Set global git config to ignore certificate..."
-	git config --global http.sslverify false
+	@git config --global http.sslverify false
 
 	# If PEGASUS_GIT_TAG, clone the tag, Otherwise clone main and checkout branch
-    # NOTE: .ONESHELL  not defined in this scrip the following defined as single statement
+	# NOTE: .ONESHELL  not defined in this script the following defined as single statement
 
 	@if [ ! -z ${PEGASUS_GIT_TAG} ]; then \
 		echo "Cloning OpenPegasus github repo tag ${PEGASUS_GIT_TAG} to WBEM root directory"; \
@@ -154,52 +157,68 @@ checkout-repository.done:
 
 	@git -C ${PEGASUS_GIT_HOME} status
 
-	echo "done" >$@
+	@echo "done" >$@
 
 .PHONY: checkout-repository
 checkout-repository: checkout-repository.done
 	@echo "Target $@ complete"
 
-.PHONY: build-server
-build-server:
+build-server.done: checkout-repository.done
 	@echo "Building the server using pegasus source..."
 	$(MAKE) -C ${PEGASUS_ROOT} clean
 	$(MAKE) -C ${PEGASUS_ROOT} build
 	@echo "List the current build variables in pegasus-build-variables.env..."
 	@export | grep PEGASUS > pegasus-build-variables.env
-	echo "done" >$@.done
+	@echo "done" >$@
 	@echo "Target $@ complete"
 
+.PHONY: build-server
+build-server: build-server.done
+
+# test-server target.  Test server only if PEGASUS_TEST_TARGET has value and
+# build-server.done. Note that in any case the OpenPegasus test repository and
+# providers are installed which tests much of OpenPegasus.
+# tests could be executed manually by running make <test target> in the
+# pegasus directory.
+
 .PHONY: test-server
-test-server:
+test-server: build-server.done
 	@echo "Testing the server in the build container..."
 
+	@echo "Set Interop Namespace to root/PG_InterOp..."
+	@export PEGASUS_INTEROP_NAMESPACE="root/PG_InterOp"
 	@echo "Create the server build test repository..."
-	$(MAKE) create_test_repository
+	@$(MAKE) create_test_repository
 
-	@echo "Testing the server build with ${PEGASUS_TEST_TARGET}..."
-	$(MAKE) -C ${PEGASUS_ROOT} ${PEGASUS_TEST_TARGET}
+	if [ ! -z ${PEGASUS_TEST_TARGET} ]; then \
+		@echo "Testing the server build with ${PEGASUS_TEST_TARGET}..."; \
+		$(MAKE) -C ${PEGASUS_ROOT} ${PEGASUS_TEST_TARGET}; \
+		@echo "NOTE: Docker repository not clean. Contains data from test."; \
+	else \
+		@echo "No tests run. PEGASUS_TEST_TARGET not set."; \
+	fi
 
-	@echo "NOTE: Docker repository not clean. Contains data from test."
-	echo "done" >$@.done
+	@echo "done" >$@.done
 	@echo "Target $@ complete"
 
 .PHONY: create_test_repository
 create_test_repository:
-	@echo "Create the repository..."
+	@echo "Create the repository and install providers..."
 	$(MAKE) -C ${PEGASUS_ROOT} repository
-	# specific repository extensions.
+	# specific repository  Schema extensions extensions.
 	$(MAKE) -C ${PEGASUS_ROOT} testrepository
 	@echo "Test repository created"
 
+
+# Default provision-server.  This creates the repository and test repository
+# that are the same as the test repository except that the namespace is the
+# namespace defined in the PEGASUS_INTEROP_NAMESPACE variable.
+# TODO: Need way to override this with user defined provision-server
+
 .PHONY: provision-server
 provision-server:
-	@echo "Provision the server in build container..."
-
-	@echo "Create the  test repository..."
+	@echo "Provision the server in build container based on Pegasus tests..."
 	$(MAKE) -C ${PEGASUS_ROOT} repository
-	# TODO: This will become optional so that the user can create their
-	# specific repository extensions.
 	$(MAKE) -C ${PEGASUS_ROOT} testrepository
 
 .PHONY: remove-components
@@ -214,7 +233,7 @@ remove-components:
 	@echo "Remove object files"
 	rm -rf ${PEGASUS_HOME}/obj
 
-	@echo "Remove any trace files"
+	@echo "Remove trace files"
 	rm -f ${PEGASUS_HOME}/trace/*
 
 	@echo "Remove unused Test files"
@@ -230,12 +249,9 @@ remove-components:
 .PHONY: docker-image-build
 docker-image-build: remove-components
 
-	@echo "Building the WBEM Server image..."
+	@echo "Building the OpenPegasus WBEM Server image..."
 
-	@echo "Listing the current docker version..."
-	docker version
-
-	@echo "Build dockerlocal image (no repository component) image..."
+	@echo "Build docker local image (no docker repository component) image..."
 	docker build --tag ${SERVER_IMAGE}:${SERVER_IMAGE_VERSION} .
 
 .PHONY: docker-push-server-image

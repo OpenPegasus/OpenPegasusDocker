@@ -30,6 +30,15 @@ RUN_IMAGE=openpegasus-server
 SHELL := /bin/bash
 DOCKER_TAG := $(shell cat version.txt)
 
+# If variable set, set variable to execute /bin/bash
+# AUTORUN := "/bin/bash"
+
+# Default is to start build container with bash command line
+AUTORUN-BUILD := "/bin/bash"
+
+# Default is to autorun server
+AUTORUN-SERVER := ""
+
 .PHONY: help
 help:
 	@echo "Usage:"
@@ -59,8 +68,7 @@ help:
 .PHONY: create-build-image
 create-build-image:
 	@echo "Building the docker build image..."
-	# docker rmi ${DOCKER_REGISTRY}/${BUILD_IMAGE}:$(DOCKER_TAG)
-	docker build -rm -t ${DOCKER_REGISTRY}/${BUILD_IMAGE}:$(DOCKER_TAG) .
+	docker build --rm -t ${DOCKER_REGISTRY}/${BUILD_IMAGE}:$(DOCKER_TAG) .
 
 .PHONY: publish-build-image
 publish-build-image:
@@ -84,7 +92,9 @@ run-build-image:
 	sudo docker run -it --rm \
 		-v /home/${USER}/.ssh:/root/.ssh \
 		--env-file=pegasus-build-vars.env \
-		-v /var/run/docker.sock:/var/run/docker.sock ${DOCKER_REGISTRY}/${BUILD_IMAGE}:${DOCKER_TAG} /bin/bash
+		-v /var/run/docker.sock:/var/run/docker.sock ${DOCKER_REGISTRY}/${BUILD_IMAGE}:${DOCKER_TAG} ${AUTORUN-BUILD}
+
+# TODO remove the following in favor of autorun variable
 
 .PHONY: run-server-image
 run-server-image:
@@ -93,20 +103,23 @@ run-server-image:
 	sudo docker run -it --rm  -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 \
 		--init --ulimit core=-1 \
 		--mount type=bind,source=/tmp/,target=/tmp/ \
-		--log-driver=syslog --name pegasus  ${RUN_IMAGE}:${DOCKER_TAG}
+		--log-driver=syslog --name pegasus  ${RUN_IMAGE}:${DOCKER_TAG} ${AUTORUN-SERVER}
 
 # NOTE: Set the last item in the above command to /bin/bash to start the runtime environment
 # in bash. The current setting starts cimserver upon container startup and shuts it down when
 # the container is stopped.
 
-# TODO: This target specifies the image name including the DOCKER_REGISTRY so only
-#       really works when image has been published.
-.PHONY: run-openpegasus-image
-run-openpegasus-image:
-	@echo Example: run the OpenPegasus build image to build the OpenPegasus server image..."
-	echo http port = 15988, https port = 15989
-	sudo docker run -it --rm  -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 \
-	    --log-driver=syslog --name pegasus  ${DOCKER_REGISTRY}/${RUN_IMAGE}:${DOCKER_TAG} /bin/bash
+# Run the but start bash when the container starts rather than pegasus. Runs
+# with alternate ports.
+
+.PHONY: run-server-image-terminal
+run-server-image-terminal:
+	@echo run the local server container image ${RUN_IMAGE}:${DOCKER_TAG}
+	echo http port = 9988, https port = 9989
+	sudo docker run -it --rm  -p 127.0.0.1:9988:5988 -p 127.0.0.1:9989:5989 \
+		--init --ulimit core=-1 \
+		--mount type=bind,source=/tmp/,target=/tmp/ \
+		--log-driver=syslog --name pegasusterminal  ${RUN_IMAGE}:${DOCKER_TAG} /bin/bash
 
 .PHONY: lint
 lint:
