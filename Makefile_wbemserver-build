@@ -189,12 +189,12 @@ test-server: build-server.done
 	@echo "Create the server build test repository..."
 	@$(MAKE) create_test_repository
 
-	if [ ! -z ${PEGASUS_TEST_TARGET} ]; then \
-		@echo "Testing the server build with ${PEGASUS_TEST_TARGET}..."; \
+	@if [ ! -z ${PEGASUS_TEST_TARGET} ]; then \
+		echo "Testing the server build with ${PEGASUS_TEST_TARGET}..."; \
 		$(MAKE) -C ${PEGASUS_ROOT} ${PEGASUS_TEST_TARGET}; \
-		@echo "NOTE: Docker repository not clean. Contains data from test."; \
+		echo "NOTE: Docker repository not clean. Contains data from test."; \
 	else \
-		@echo "No tests run. PEGASUS_TEST_TARGET not set."; \
+		echo "No tests run. PEGASUS_TEST_TARGET not set."; \
 	fi
 
 	@echo "done" >$@.done
