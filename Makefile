@@ -16,6 +16,7 @@ RUN_IMAGE=openpegasus-server
 SHELL := /bin/bash
 DOCKER_TAG := $(shell cat version.txt)
 CONTAINER_NAME := "pegasus"
+PEGASUS_ENV_VAR_FILE := "pegasus-build-vars.env"
 
 # Definition of strings for the option to start containers in bash or with app
 # NOTE: AUTORUN must be empty and not empty string
@@ -23,14 +24,35 @@ BASHRUN := "/bin/bash"
 AUTORUN :=
 
 # Default for build is to start build container with bash command line
-AUTORUN-BUILD := ${BASHRUN}
+# Alternative values are true, false, variable not set
+ifdef BLDDEVMODE
+	ifeq ($(BLDDEVMODE), true)
+		AUTORUN-BUILD := ${BASHRUN}
+	else
+		ifeq ($(BLDDEVMODE), false)
+			AUTORUN-BUILD := ${AUTORUN}
+		else
+			$(error BLDDEVMODE must be true or false)
+		endif
+	endif
+else
+	AUTORUN_BUILD := ${BASHRUN}
+endif
 
 # Default for openpegasus-server is to start wbem server upon run.
-AUTORUN-SERVER ?= ${AUTORUN}
-ifeq ($(DEVMODE), true)
-	AUTORUN-SERVER := ${BASHRUN}
+# Alternative values are true, false, variable not set.
+ifdef RUNDEVMODE
+	ifeq ($(RUNDEVMODE), true)
+		AUTORUN-SERVER := ${BASHRUN}
+	else
+		ifeq ($(RUNDEVMODE), false)
+			AUTORUN-SERVER := ${AUTORUN}
+		else
+			$(error RUNDEVMODE must be true or false)
+		endif
+	endif
 else
-	AUTORUN-SERVER := ${AUTORUN}
+	AUTORUN_SERVER := ${AUTORUN}
 endif
 
 .PHONY: help
@@ -57,7 +79,7 @@ help:
 	@echo "  Docker image version tag (DOCKER_TAG) = ${DOCKER_TAG}"
 	@echo "  Pegasus build environment variables file () = ${PEGASUS_ENV_VAR_FILE}."
 	@echo "  This file is required as it defines the pegasus build configuration."
-	@echo "  Start run image with bash (DEVMODE) = ${DEVMODE}"
+	@echo "  Start run image with bash (RUNDEVMODE) = ${RUNDEVMODE}"
 	@echo "  Values are true/false or not set. May be set on make command line"
 	@echo ""
 	@echo "NOTE: DOCKER_USER and DOCKER_PASSWORD are requested on deploy"

@@ -87,7 +87,6 @@ that are listed with Makefile help
 NOTE: The lint will only occur if the docker lint tool is installed.
 
 ```
-
 make lint                   Lint the Dockerfile.
 make build                  Build the build image.
 make deploy                 Build the run image.
@@ -106,8 +105,8 @@ the build container:
 2. Building OpenPegasus from this source code.
    1. Since the build process for OpenPegasus involves setting a number of
       environment variables that control the build, A set of these variables
-      is defined in the file pegasus_build_vars.env which is attached to the
-      build build image when that image is run (--env-file option)
+      is defined in the file `pegasus_build_vars.env` which is attached to the
+      build build image when that image is run (`--env-file` option)
    2. Running tests on the build OpenPegasus code to confirm that the build
       was executed properly.
    3. Cleaning unwanted components out of the build result to minimize the
@@ -136,8 +135,14 @@ following:
       run the pywbemtools client)
    3. Test that the ports are open
 
+The WBEM server may be started when the openpegas-server images is started with the
+option DEVMODE as follows:
 
-Thus the set of commands below will create an OpenPegasus server container:
+```console
+make run-server-image DEVMODE=true
+```
+
+Thus the set of commands below will create and run an OpenPegasus server container:
 
 ```console
 git clone https://github.com/OpenPegasus/OpenPegasusDocker.git
@@ -178,7 +183,7 @@ the pegasus tests against the built server.
 The same build tasks can also be specified on the docker command line as shown below.
 
 The build command requires a file containing the definition of environment variables
-that configure the built image. These environment variables are passed to the build container
+that configure the built WBEM server. These environment variables are passed to the build container
 with the  --env-file option. A default
 environment file (pegasus-build-vars.env) is part of this repository.
 
