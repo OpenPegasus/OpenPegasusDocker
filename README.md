@@ -48,7 +48,7 @@ The following must be present prior to building images.
 
 * Docker version 19.x.x or later
 
-## Building the Images
+## Building the Docker images
 Building the OpenPegasus WBEM Server image is a two step process:
 
 1. Building the server build image which starts with a Linux image (Ubuntu) and
@@ -62,15 +62,14 @@ and build OpenPegasus from within that build container.
    * creating the OpenPegasus run image with just the runtime
 components of OpenPegasus and whatever provisioning choices you have made.
 
-OpenPegasus must be provisioned with any required providers and CIM Model
+OpenPegasus must be provisioned with providers and CIM Model
 components in a repository for the target environment.  The default is to build
 the server with the OpenPegasus test environment that includes an number of
 providers and a CIM repository based on a DMTF released schema.
 
-### Build the OpenPegasus Build Image
-To build the docker image for building the OpenPegasus WBEM Server image first
-set the docker image version in the version.txt file.  Next execute the
-following build command.
+### Build the OpenPegasus Docker build image
+To build the docker image for building the OpenPegasus WBEM Server image
+execute the following build command.
 
 ```console
 make build
@@ -79,19 +78,23 @@ This will lint the Dockerfile and then build the basic image provided no
 linting errors were found.
 
 This image will contain the make file Makefile_wbem-build (renamed to Makefile)
-which is the file that defines the download.
+which is the file that defines the targets for building the OpenPegasus WBEm
+server from its source code.
 
 The WBEM Build makefile supports the following targets and a number of subtargets
 that are listed with Makefile help
 
-NOTE: The lint will only occur if the docker lint tool  is installed.
+NOTE: The lint will only occur if the docker lint tool is installed.
 
 ```
-make lint     Lint the Dockerfile.
-make build    Build the build image.
-make deploy   Build the run image.
-make publish  Publish the build image to the remote docker repository.
-make clean    Remove the build image from the local machine.
+
+make lint                   Lint the Dockerfile.
+make build                  Build the build image.
+make deploy                 Build the run image.
+make publish                Publish the build image to the remote docker repository.
+make clean                  Remove the build image from the local machine.
+make run-build-image        Run the build the docker pegasus server image."
+make run-server-image	    Run OpenPegasus WBEM server docker image"
 ```
 
 ### Build the OpenPegasus WBEM Server Image
@@ -99,11 +102,12 @@ Using the build image the server run image can now be built.
 
 Building the OpenPegasus WBEM Server image involves the following steps run within
 the build container:
-1. Retrieving the OpenPegasus Source code, etc. from github OpenPegasus repository
+1. Retrieving the OpenPegasus source code from github OpenPegasus repository
 2. Building OpenPegasus from this source code.
    1. Since the build process for OpenPegasus involves setting a number of
       environment variables that control the build, A set of these variables
-      is defined in pegasus_build_vars.env.
+      is defined in the file pegasus_build_vars.env which is attached to the
+      build build image when that image is run (--env-file option)
    2. Running tests on the build OpenPegasus code to confirm that the build
       was executed properly.
    3. Cleaning unwanted components out of the build result to minimize the
@@ -117,9 +121,21 @@ following:
 
 1. Clone this repository to your local machine
 2. Create the build image which consists of Ubuntu, updates to Ubuntu and
-   build tools to compile OpenPegasus source code
-3. Run the build container an build OpenPegasus
-4. Deploy the OpenPegasus server container
+   build tools to compile OpenPegasus source code (`make build`)
+3. Run the build container (`make run-build-image`)
+4. Move to the terminal started when the build image starts
+5. Build the OpenPegasus WBEM server (`make build`)
+6. Deploy the OpenPegasus server container (`make deploy`)
+7. Return to the the original terminal window.
+8. Start the OpenPegasus WBEM server run image (make run-server-image)
+9. The WBEM server should be running in its Docker container.  This can be
+   tested by:
+   1. View the WEB page displayed by the container at the same ports as its
+      XML ports (default 15988 and 15989)
+   2. Run a WBEM client against the server at either of the ports (for example
+      run the pywbemtools client)
+   3. Test that the ports are open
+
 
 Thus the set of commands below will create an OpenPegasus server container:
 
@@ -127,7 +143,7 @@ Thus the set of commands below will create an OpenPegasus server container:
 git clone https://github.com/OpenPegasus/OpenPegasusDocker.git
 make build
 make run-build-container
-# go to the console in the running build container
+# Go to the console in the running build container
 make build
 make deploy
 # exit the build container and start the pegasus run container
@@ -136,7 +152,7 @@ make run-server-container
 ```
 
 The build container start can also be done with the following docker command:
-sudo docker run -it --rm -v /home/$USER/.ssh:/root/.ssh -v /var/run/docker.sock:/var/run/docker.sock smi-build:tag /bin/bash
+sudo docker run -it --rm -v /home/$USER/.ssh:/root/.ssh -v /var/run/docker.sock:/var/run/docker.sock openpegasus-build:tag /bin/bash
 
 You will be presented with a bash command prompt with the SMI root directory as
 the current working directory.  At the prompt you are now able to execute the
@@ -154,10 +170,10 @@ following make commands.
 
 A logical sequence to build the server from within the build container terminal
 
-"make build" : clones the current OpenPegasus project, starts a build and runs
+`make build` : clones the current OpenPegasus project, starts a build and runs
 the pegasus tests against the built server.
 
-"make deploy": performs all the above build tasks plus builds the pegasus WBEM server
+`make deploy`: performs all the above build tasks plus builds the pegasus WBEM server
 
 The same build tasks can also be specified on the docker command line as shown below.
 
@@ -167,27 +183,29 @@ with the  --env-file option. A default
 environment file (pegasus-build-vars.env) is part of this repository.
 
 ```console
-sudo docker run -it --rm -v /home/<username>/.ssh:/root/.ssh --env-file -v /var/run/docker.sock:/var/run/docker.sock smi-build:<tag> "make build"
+sudo docker run -it --rm -v /home/<username>/.ssh:/root/.ssh --env-file -v /var/run/docker.sock:/var/run/docker.sock openpegasus-build:<tag> "make build"
 ```
 
-Adding /bin/bash at the end of the command causes the server to start at the bash
+Adding `/bin/bash` at the end of the command causes the server to start at the bash
 console interface rather than automatically executing make build and it the default
 
 The container will terminate though after it finishes executing the specified command.
 
-To only build, test and create the server image from within the build container run these commands in build image bash shell.
+To only build, test and create the server image from within the build container
+run these commands in build image bash shell.
 
 ```console
 make build
 make deploy
 ```
 
-The make command for the build server image will build the server image openpegasus-server:<tag> on your local machine.
+The make command for the build server image will build the server image
+openpegasus-server:<tag> on your local machine.
 
 If you wish to skip this step you can use one of the existing build images
 such as this one on Dockerhub.
 
-NOTE: Currently the build and server image are in the docker  user repository kschopmeyer.
+NOTE: Currently the build and server image are in the docker user repository `kschopmeyer`.
 
 The OpenPegasus public build image build by this set of utilities is:
 
@@ -205,7 +223,7 @@ kschopmeyer/openpegasus-server:0.1.2
 
 ## Run the Server Image
 
-To run the server simply execute this command line . This runs the container and
+To run the server simply execute the following command line . This runs the container and
 starts the OpenPegasus web server in the container.
 
 ```console
@@ -213,7 +231,14 @@ sudo docker run -it --rm -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 kschopm
 
 ```
 
-or the make target  make run-server-container.
+or if using a local run image created by the build container
+
+```console
+sudo docker run -it --rm -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 openpegasus-server:0.1.2
+
+```
+
+or use  the make target  `make run-server-container`.
 
 To run the server image and not automatically start OpenPegasus when the server starts enter the run command
 with the last parameter ("/bin/bash")
