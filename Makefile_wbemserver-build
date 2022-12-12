@@ -46,6 +46,9 @@ MAKEFLAGS += --no-builtin-rules
 
 SHELL=/bin/bash
 
+.PHONY: default-goal
+default-goal: build deploy
+
 .PHONY: help
 help:
 	@echo "Usage:"
@@ -90,10 +93,6 @@ help:
 	@echo ""
 	@echo "NOTE: DOCKER_USER and DOCKER_PASSWORD are requested on publish"
 	@echo ""
-
-# Top-level build targets
-.PHONY: all
-all: build deploy
 
 build.done: checkout-repository build-server test-server
 	@echo "done" >$@

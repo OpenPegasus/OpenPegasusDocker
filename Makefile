@@ -55,13 +55,16 @@ else
 	AUTORUN_SERVER := ${AUTORUN}
 endif
 
+.PHONY: default-goal
+default-goal: make build
+
 .PHONY: help
 help:
 	@echo "Usage:"
 	@echo ""
 	@echo "  make lint                  Lint the Dockerfile."
 	@echo "  make build                 Build the build image."
-	@echo "  make deploy                Deploy, push the build image to a docker image registry."
+	@echo "  make publish               Publish, push the build image to a docker image registry."
 	@echo "  make clean	                Remove the build image from the local machine."
 	@echo "  make run-build-image	    Run the docker build the pegasus server image."
 	@echo "  make run-server-image	    Run docker OpenPegasus WBEM server in container"
@@ -79,7 +82,8 @@ help:
 	@echo "  Docker image version tag (DOCKER_TAG) = ${DOCKER_TAG}"
 	@echo "  Pegasus build environment variables file () = ${PEGASUS_ENV_VAR_FILE}."
 	@echo "  This file is required as it defines the pegasus build configuration."
-	@echo "  Start run image with bash (RUNDEVMODE) = ${RUNDEVMODE}"
+	@echo "  Start run image choice (RUNDEVMODE) = ${RUNDEVMODE}, default start server"
+	@echo "  Start run image choice (BLDDEVMODE) = ${BLDDEVMODE}, default start bash"
 	@echo "  Values are true/false or not set. May be set on make command line"
 	@echo ""
 	@echo "NOTE: DOCKER_USER and DOCKER_PASSWORD are requested on deploy"
