@@ -53,7 +53,7 @@ default-goal: build deploy
 help:
 	@echo "Usage:"
 	@echo ""
-	@echo "  make all           make build deploy. Downloads, builds, tests"
+	@echo "  make               make build, deploy. Downloads, builds, tests"
 	@echo "                     OpenPegasus and builds wbem server run image."
 	@echo "  make config-info   OpenPegasus build and run configuration information."
 	@echo "  make build         Clone OpenPegasus compile it and execute tests."

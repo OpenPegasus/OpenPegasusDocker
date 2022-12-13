@@ -133,6 +133,7 @@ COPY ./Dockerfile_wbemserver-build ${PEGASUS_BUILD_ROOT}/Dockerfile
 # OpenPegasus Build folder
 WORKDIR ${PEGASUS_BUILD_ROOT}
 
-# Call the make default target which builds and deploys the OpenPegasus image
+# Call the make default target which builds OpenPegasus and deploys the
+# OpenPegasus image to the local Docker repository
 ENTRYPOINT ["/bin/bash", "-l", "-c"]
 CMD ["make"]

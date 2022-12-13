@@ -20,40 +20,41 @@ PEGASUS_ENV_VAR_FILE := "pegasus-build-vars.env"
 
 # Definition of strings for the option to start containers in bash or with app
 # NOTE: AUTORUN must be empty and not empty string
-BASHRUN := "/bin/bash"
-AUTORUN :=
+BASH := "/bin/bash"
+AUTO :=
 
 # Default for build is to start build container with bash command line
 # Alternative values are true, false, variable not set
-ifdef BLDDEVMODE
-	ifeq ($(BLDDEVMODE), true)
-		AUTORUN-BUILD := ${BASHRUN}
-	else
-		ifeq ($(BLDDEVMODE), false)
-			AUTORUN-BUILD := ${AUTORUN}
-		else
-			$(error BLDDEVMODE must be true or false)
-		endif
-	endif
+ifdef BUILD
+  ifeq ($(BUILD),auto)
+    BUILD-START = ${AUTO}
+  else
+    ifeq ($(BUILD),bash)
+      BUILD-START = ${BASH}
+    else
+      $(error BUILD=${BUILD} invalid, must be auto or bash. Default: bash)
+    endif
+  endif
 else
-	AUTORUN_BUILD := ${BASHRUN}
+    BUILD-START = ${BASH}
 endif
 
 # Default for openpegasus-server is to start wbem server upon run.
 # Alternative values are true, false, variable not set.
-ifdef RUNDEVMODE
-	ifeq ($(RUNDEVMODE), true)
-		AUTORUN-SERVER := ${BASHRUN}
-	else
-		ifeq ($(RUNDEVMODE), false)
-			AUTORUN-SERVER := ${AUTORUN}
-		else
-			$(error RUNDEVMODE must be true or false)
-		endif
-	endif
+ifdef SERVER
+  ifeq ($(RUN),auto)
+    SERVER-START = ${BASH}
+  else
+    ifeq ($(SERVER),bash)
+      SERVER-START = ${AUTO}
+    else
+      $(error SERVER=${SERVER} invalid. Must be auto or bash. Default: auto)
+    endif
+  endif
 else
-	AUTORUN_SERVER := ${AUTORUN}
+	SERVER-START = ${AUTO}
 endif
+
 
 .PHONY: default-goal
 default-goal: make build
@@ -112,19 +113,21 @@ clean-build-image:
 
 .PHONY: run-build-image
 run-build-image:
+	@echo "RUN-START = ${RUN-START} BUILD-START = ${BUILD-START}"
 	@echo Run the build image ${DOCKER_REGISTRY}/${BUILD_IMAGE}:${DOCKER_TAG}
 	sudo docker run -it --rm \
 		-v /home/${USER}/.ssh:/root/.ssh \
 		--env-file=${PEGASUS_ENV_VAR_FILE} \
-		-v /var/run/docker.sock:/var/run/docker.sock ${DOCKER_REGISTRY}/${BUILD_IMAGE}:${DOCKER_TAG} ${AUTORUN-BUILD}
+		-v /var/run/docker.sock:/var/run/docker.sock ${DOCKER_REGISTRY}/${BUILD_IMAGE}:${DOCKER_TAG} ${BUILD-START}
 
 .PHONY: run-server-image
 run-server-image:
+	@echo "RUN-START = ${RUN-START} BUILD-START = ${BUILD-START}"
 	@echo run the local server container image ${RUN_IMAGE}:${DOCKER_TAG}
 	@echo http port = 15988, https port = 15989
 	sudo docker run -it --rm  -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 \
 		--init --ulimit core=-1 --mount type=bind,source=/tmp/,target=/tmp/ \
-		--log-driver=syslog --name ${CONTAINER_NAME} ${RUN_IMAGE}:${DOCKER_TAG} ${AUTORUN-SERVER}
+		--log-driver=syslog --name ${CONTAINER_NAME} ${RUN_IMAGE}:${DOCKER_TAG} ${RUN-START}
 
 .PHONY: lint
 lint:
