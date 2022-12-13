@@ -46,11 +46,15 @@ MAKEFLAGS += --no-builtin-rules
 
 SHELL=/bin/bash
 
+# Top-level build target. This is use as target if cmd lines is "make"
+.PHONY: default-target
+default-target: build deploy
+
 .PHONY: help
 help:
 	@echo "Usage:"
 	@echo ""
-	@echo "  make all          make build deploy."
+	@echo "  make               make build deploy."
 	@echo "  make config-info   OpenPegasus build and run configuration information."
 	@echo "  make build         clone OpenPegasus compile it and execute tests."
 	@echo "      build subtargets:"
@@ -85,10 +89,6 @@ help:
 	@echo ""
 	@echo "NOTE: DOCKER_USER and DOCKER_PASSWORD are requested on publish"
 	@echo ""
-
-# Top-level build targets
-.PHONY: all
-all: build deploy
 
 build.done: checkout-repository build-server test-server
 	@echo "done" >$@
@@ -181,7 +181,7 @@ build-server: build-server.done
 # pegasus directory.
 
 .PHONY: test-server
-test-server: build-server.done
+test-server.done: build-server.done
 	@echo "Testing the server in the build container..."
 	@echo "Set Interop Namespace to root/PG_InterOp..."
 	@export PEGASUS_INTEROP_NAMESPACE="root/PG_InterOp"
@@ -199,6 +199,9 @@ test-server: build-server.done
 
 	@echo "done" >$@.done
 	@echo "Target $@ complete"
+
+.PHONY: test-server
+test-server: test_server.done
 
 # Build the CIM repository define for the OpenPegasus testsuite.  This is
 # based on the the targets defined in pegasus/TestMakefile. This defines the
@@ -256,8 +259,8 @@ docker-image-build: remove-components
 	@echo "Build docker local image (no docker repository component) image..."
 	docker build --tag ${SERVER_IMAGE}:${SERVER_IMAGE_VERSION} .
 
-.PHONY: docker-push-server-image
-docker-push-server-image:
+.PHONY: publish
+publish:
 	@echo "Pushing the built WBEM Server image to private image registry..."
 
 	docker logout

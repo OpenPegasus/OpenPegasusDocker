@@ -24,7 +24,8 @@
 # and build containers in the same docker repository. They are named
 # Registry - (username)/OpenPegasus:tag
 # where the tag defines both the container type (build or server)
-DOCKER_REGISTRY=kschopmeyer
+DOCKER_USER=kschopmeyer
+DOCKER_REGISTRY=$(DOCKER_USER)
 BUILD_IMAGE=openpegasus-build
 RUN_IMAGE=openpegasus-server
 SHELL := /bin/bash
@@ -45,7 +46,7 @@ help:
 	@echo ""
 	@echo "  make lint                  Lint the Dockerfile."
 	@echo "  make build                 Build the build image."
-	@echo "  make deploy                Deploy, push the build image to a docker image registry."
+	@echo "  make publish               Push the build image to a docker image registry."
 	@echo "  make clean	                Remove the build image from the local machine."
 	@echo "  make run-build-image	    Run the build the pegasus server image."
 	@echo "  make run-server-image	    Run OpenPegasus WBEM server in container"
@@ -58,11 +59,10 @@ help:
 	@echo "    creating and publishing the runtime container."
 	@echo ""
 	@echo "Build variables"
-	@echo "  Docker registry = ${DOCKER_REGISTRY}"
 	@echo "  Docker image name = ${BUILD_IMAGE}"
 	@echo "  Docker image version tag = ${DOCKER_TAG}"
 	@echo ""
-	@echo "NOTE: DOCKER_USER and DOCKER_PASSWORD are requested on deploy"
+	@echo "NOTE: DOCKER_USER and DOCKER_PASSWORD are requested for publish"
 	@echo ""
 
 .PHONY: create-build-image
@@ -74,21 +74,30 @@ create-build-image:
 publish-build-image:
 	@echo "Publishing the wbem server build image..."
 	docker logout
-	docker image tag ${DOCKER_REGISTRY}:${BUILD_IMAGE}:$(DOCKER_TAG) ${DOCKER_REGISTRY}/${BUILD_IMAGE}:${DOCKER_TAG}
+	docker image tag ${DOCKER_REGISTRY}/${BUILD_IMAGE}:$(DOCKER_TAG) ${DOCKER_REGISTRY}/${BUILD_IMAGE}:${DOCKER_TAG}
 	docker login -u $${DOCKER_USER} -p $${DOCKER_PASSWORD}
 	docker push ${DOCKER_REGISTRY}/${BUILD_IMAGE}:$(DOCKER_TAG)
 	docker logout
 
+.PHONY: publish-server-image
+publish-server-image:
+	@echo "Pushing the built WBEM Server image to Dockerimage registry..."
+	docker logout
+	docker tag ${SERVER_IMAGE}:${SERVER_IMAGE_VERSION} ${DOCKER_REGISTRY}/${SERVER_IMAGE}:${DOCKER_TAG}
+	docker login -u $${DOCKER_USER} -p $${DOCKER_PASSWORD}
+	docker push ${DOCKER_REGISTRY}/${SERVER_IMAGE}:${DOCKER_TAG}
+	docker logout
+
 .PHONY: clean-build-image
 clean-build-image:
-	@echo "Removing the build image ${DOCKER_REGISTRY}/${BUILD_IMAGE}:$(DOCKER_TAG) ..."
+	@echo "Removing the build image ${DOCKER_USER}/${BUILD_IMAGE}:$(DOCKER_TAG) ..."
 	-docker rmi ${DOCKER_REGISTRY}/${BUILD_IMAGE}:$(DOCKER_TAG)
 	@echo "Removing the build image ${BUILD_IMAGE}:$(DOCKER_TAG) ..."
 	-docker rmi ${BUILD_IMAGE}:$(DOCKER_TAG)
 
 .PHONY: run-build-image
 run-build-image:
-	@echo Run the build image ${DOCKER_REGISTRY}/${BUILD_IMAGE}:${DOCKER_TAG}
+	@echo Run the build image ${DOCKER_USER}/${BUILD_IMAGE}:${DOCKER_TAG}
 	sudo docker run -it --rm \
 		-v /home/${USER}/.ssh:/root/.ssh \
 		--env-file=pegasus-build-vars.env \
@@ -105,23 +114,6 @@ run-server-image:
 		--mount type=bind,source=/tmp/,target=/tmp/ \
 		--log-driver=syslog --name pegasus  ${RUN_IMAGE}:${DOCKER_TAG} ${AUTORUN-SERVER}
 
-# NOTE: Set the last item in the above command to /bin/bash to start the runtime environment
-# in bash. The current setting starts cimserver upon container startup and shuts it down when
-# the container is stopped.
-
-# Run the but start bash when the container starts rather than pegasus. Runs
-# with alternate ports.
-
-.PHONY: run-server-image-terminal
-run-server-image-terminal:
-	@echo run the local server container image ${RUN_IMAGE}:${DOCKER_TAG}
-	echo http port = 9988, https port = 9989
-	sudo docker run -it --rm  -p 127.0.0.1:9988:5988 -p 127.0.0.1:9989:5989 \
-		--init --ulimit core=-1 \
-		--mount type=bind,source=/tmp/,target=/tmp/ \
-		--log-driver=syslog --name pegasusterminal  ${RUN_IMAGE}:${DOCKER_TAG} /bin/bash
-
-
 .PHONY: lint
 lint:
 	@echo "Linting Dockerfile if hadolint exists..."
@@ -132,8 +124,8 @@ lint:
 build: lint create-build-image
 	@echo "You can start build container with \"make run-build-image\"."
 
-.PHONY: deploy
-deploy: build publish-build-image
+.PHONY: publish
+publish: publish-build-image
 
 .PHONY: clean
 clean: clean-build-image
