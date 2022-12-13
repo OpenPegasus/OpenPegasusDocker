@@ -134,6 +134,7 @@ COPY ./Dockerfile_wbemserver-build ${PEGASUS_BUILD_ROOT}/Dockerfile
 # OpenPegasus Build folder
 WORKDIR ${PEGASUS_BUILD_ROOT}
 
-# Build the OpenPegasus binaries and test the cimservery det
+# Call the make default target which builds OpenPegasus and deploys the
+# OpenPegasus image to the local Docker repository
 ENTRYPOINT ["/bin/bash", "-l", "-c"]
-CMD ["make build"]
+CMD ["make"]

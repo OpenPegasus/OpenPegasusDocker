@@ -54,14 +54,16 @@ default-target: build deploy
 help:
 	@echo "Usage:"
 	@echo ""
-	@echo "  make               make build deploy."
+	@echo "  make               make build, deploy. Downloads, builds, tests"
+	@echo "                     OpenPegasus and builds wbem server run image."
 	@echo "  make config-info   OpenPegasus build and run configuration information."
-	@echo "  make build         clone OpenPegasus compile it and execute tests."
+	@echo "  make build         Clone OpenPegasus compile it and execute tests."
 	@echo "      build subtargets:"
 	@echo "        make checkout-repository"
 	@echo "        build-server"
 	@echo "        test-server"
-	@echo "  make deploy        build run image and publish the image."
+	@echo "  make deploy        Build run image into local docker repository."
+	@echo "                     with <Name>:<version> but no <repository name>.""
 	@echo "       deploy subtargets:"
 	@echo "         make build-image   Create the local server run image."
 	@echo "         make provision-server, install repository, certs, etc.."
@@ -72,20 +74,23 @@ help:
 	@echo "  make clean	        Remove the build image from the local machine."
 	@echo "  make clobber       Remove everything created to ensure clean start."
 	@echo ""
-	@echo "  Docker file for OpenPegasus WBEM Server build.  This file"
-	@echo "    clones the github repository, compiles and tests OpenPegasus "
-	@echo "    and deploys it into a container."
-	@echo ""
-	@echo "Git uri,  OP Docker version, directory variables. Set in build "
+	@echo "Build and run configuration variables. See: Dockerfile and pegaus-build-vars.env"
+	@echo "Git and Docker variables for image build "
 	@echo "  SERVER_IMAGE = The name of the server docker image"
 	@echo "  SERVER_VERSION = The name of the server docker image version"
 	@echo "  PEGASUS_GIT_REPOSITORY The uri of the OpenPegasus github repo"
 	@echo "  PEGASUS_GIT_BRANCH OpenPegasus git branch"
 	@echo "  PEGASUS_GIT_TAG OpenPegasus git tag"
 	@echo "  DOCKER_REGISTRY Public registry where run image published"
-	@echo "  PEGASUS_TEST_TARGET Defines tests to run
-	@echo """
-	@echo "  OpenPegasus build variables defined for this build"
+
+	@echo "Build and test control variables."
+	@echo "  PEGASUS_TEST_TARGET Defines tests to run"
+	@echo ""
+	@echo "  OpenPegasus build variables are defined in a separate file"
+	@echo "  (ex. pegasus-build-vars.env) which must be part of the"
+	@echo "  Docker run statement that starts the build image."
+	@echo "  Docker run attaches this file to the build image with the"
+	@echo "  run option --env-file.  OpenPegasus will not build without this file."
 	@echo ""
 	@echo "NOTE: DOCKER_USER and DOCKER_PASSWORD are requested on publish"
 	@echo ""
@@ -231,7 +236,7 @@ remove-components:
 	@echo "Remove the server unwanted files in the build container..."
 
 	@echo "Remove all test executables"
-    # TODO: Should we leave some sort of validity test. Is there one of those?
+	# TODO: Should we leave some sort of validity test. See OpenPegasus 2.14.4 sanity test
 	rm -f ${PEGASUS_HOME}/bin/Test* ${PEGASUS_HOME}/bin/mu
 	rm -f ${PEGASUS_HOME}/stripline ${PEGASUS_HOME}/stripcrs ${PEGASUS_HOME}/chksrc
 
@@ -248,7 +253,6 @@ remove-components:
 	@echo "Remove unwanted certs"
 	rm -f ${PEGASUS_HOME}/test/testmonth*.* -rf
 
-
 # Subtargets for publish target
 
 .PHONY: docker-image-build
@@ -258,6 +262,8 @@ docker-image-build: remove-components
 
 	@echo "Build docker local image (no docker repository component) image..."
 	docker build --tag ${SERVER_IMAGE}:${SERVER_IMAGE_VERSION} .
+	@echo "Build docker local image ${SERVER_IMAGE}:${SERVER_IMAGE_VERSION} built"
+	@echo "This image can be run with make run-server-image using Makefile from repo."
 
 .PHONY: publish
 publish:
