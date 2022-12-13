@@ -10,7 +10,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+<<<<<<< HEAD
 DOCKER_REGISTRY=kschopmeyer
+=======
+# Usage:
+#
+# make lint   	Lint the Dockerfile.
+# make build  	Build the build image.
+# make deploy   Deploy, push the build image to an image registry.
+# make clean	Remove the build image from the local machine.
+# Docker file for OpenPegasus WBEM Server build.  This file
+# builds the docker image using Ubuntu and installs the OpenPegasus
+# make file into that container.
+
+# Currently the registry and build-image are defined to place both server
+# and build containers in the same docker repository. They are named
+# Registry - (username)/OpenPegasus:tag
+# where the tag defines both the container type (build or server)
+DOCKER_USER=kschopmeyer
+DOCKER_REGISTRY=$(DOCKER_USER)
+>>>>>>> 94a06e8 (Modify the publish targets of both  Makefiles)
 BUILD_IMAGE=openpegasus-build
 RUN_IMAGE=openpegasus-server
 SHELL := /bin/bash
@@ -65,7 +84,11 @@ help:
 	@echo ""
 	@echo "  make lint                  Lint the Dockerfile."
 	@echo "  make build                 Build the build image."
+<<<<<<< HEAD
 	@echo "  make publish               Publish, push the build image to a docker image registry."
+=======
+	@echo "  make publish               Push the build image to a docker image registry."
+>>>>>>> 94a06e8 (Modify the publish targets of both  Makefiles)
 	@echo "  make clean	                Remove the build image from the local machine."
 	@echo "  make run-build-image	    Run the docker build the pegasus server image."
 	@echo "  make run-server-image	    Run docker OpenPegasus WBEM server in container"
@@ -86,8 +109,10 @@ help:
 	@echo "  Start run image choice (RUNDEVMODE) = ${RUNDEVMODE}, default start server"
 	@echo "  Start run image choice (BLDDEVMODE) = ${BLDDEVMODE}, default start bash"
 	@echo "  Values are true/false or not set. May be set on make command line"
+	@echo "  Docker image name = ${BUILD_IMAGE}"
+	@echo "  Docker image version tag = ${DOCKER_TAG}"
 	@echo ""
-	@echo "NOTE: DOCKER_USER and DOCKER_PASSWORD are requested on deploy"
+	@echo "NOTE: DOCKER_USER and DOCKER_PASSWORD are requested for publish"
 	@echo ""
 
 .PHONY: create-build-image
@@ -99,14 +124,23 @@ create-build-image:
 publish-build-image:
 	@echo "Publishing the wbem server build image..."
 	docker logout
-	docker image tag ${DOCKER_REGISTRY}:${BUILD_IMAGE}:$(DOCKER_TAG) ${DOCKER_REGISTRY}/${BUILD_IMAGE}:${DOCKER_TAG}
+	docker image tag ${DOCKER_REGISTRY}/${BUILD_IMAGE}:$(DOCKER_TAG) ${DOCKER_REGISTRY}/${BUILD_IMAGE}:${DOCKER_TAG}
 	docker login -u $${DOCKER_USER} -p $${DOCKER_PASSWORD}
 	docker push ${DOCKER_REGISTRY}/${BUILD_IMAGE}:$(DOCKER_TAG)
 	docker logout
 
+.PHONY: publish-server-image
+publish-server-image:
+	@echo "Pushing the built WBEM Server image to Dockerimage registry..."
+	docker logout
+	docker tag ${SERVER_IMAGE}:${SERVER_IMAGE_VERSION} ${DOCKER_REGISTRY}/${SERVER_IMAGE}:${DOCKER_TAG}
+	docker login -u $${DOCKER_USER} -p $${DOCKER_PASSWORD}
+	docker push ${DOCKER_REGISTRY}/${SERVER_IMAGE}:${DOCKER_TAG}
+	docker logout
+
 .PHONY: clean-build-image
 clean-build-image:
-	@echo "Removing the build image ${DOCKER_REGISTRY}/${BUILD_IMAGE}:$(DOCKER_TAG) ..."
+	@echo "Removing the build image ${DOCKER_USER}/${BUILD_IMAGE}:$(DOCKER_TAG) ..."
 	-docker rmi ${DOCKER_REGISTRY}/${BUILD_IMAGE}:$(DOCKER_TAG)
 	@echo "Removing the build image ${BUILD_IMAGE}:$(DOCKER_TAG) ..."
 	-docker rmi ${BUILD_IMAGE}:$(DOCKER_TAG)
@@ -126,8 +160,9 @@ run-server-image:
 	@echo run the local server container image ${RUN_IMAGE}:${DOCKER_TAG}
 	@echo http port = 15988, https port = 15989
 	sudo docker run -it --rm  -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 \
-		--init --ulimit core=-1 --mount type=bind,source=/tmp/,target=/tmp/ \
-		--log-driver=syslog --name ${CONTAINER_NAME} ${RUN_IMAGE}:${DOCKER_TAG} ${RUN-START}
+		--init --ulimit core=-1 \
+		--mount type=bind,source=/tmp/,target=/tmp/ \
+		--log-driver=syslog --name pegasus  ${RUN_IMAGE}:${DOCKER_TAG} ${AUTORUN-SERVER}
 
 .PHONY: lint
 lint:
@@ -139,8 +174,8 @@ lint:
 build: lint create-build-image
 	@echo "You can start build container with \"make run-build-image\"."
 
-.PHONY: deploy
-deploy: build publish-build-image
+.PHONY: publish
+publish: publish-build-image
 
 .PHONY: clean
 clean: clean-build-image

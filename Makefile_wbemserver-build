@@ -46,8 +46,9 @@ MAKEFLAGS += --no-builtin-rules
 
 SHELL=/bin/bash
 
-.PHONY: default-goal
-default-goal: build deploy
+# Top-level build target. This is use as target if cmd lines is "make"
+.PHONY: default-target
+default-target: build deploy
 
 .PHONY: help
 help:
@@ -185,7 +186,7 @@ build-server: build-server.done
 # pegasus directory.
 
 .PHONY: test-server
-test-server: build-server.done
+test-server.done: build-server.done
 	@echo "Testing the server in the build container..."
 	@echo "Set Interop Namespace to root/PG_InterOp..."
 	@export PEGASUS_INTEROP_NAMESPACE="root/PG_InterOp"
@@ -203,6 +204,9 @@ test-server: build-server.done
 
 	@echo "done" >$@.done
 	@echo "Target $@ complete"
+
+.PHONY: test-server
+test-server: test_server.done
 
 # Build the CIM repository define for the OpenPegasus testsuite.  This is
 # based on the the targets defined in pegasus/TestMakefile. This defines the
@@ -261,8 +265,8 @@ docker-image-build: remove-components
 	@echo "Build docker local image ${SERVER_IMAGE}:${SERVER_IMAGE_VERSION} built"
 	@echo "This image can be run with make run-server-image using Makefile from repo."
 
-.PHONY: docker-push-server-image
-docker-push-server-image:
+.PHONY: publish
+publish:
 	@echo "Pushing the built WBEM Server image to private image registry..."
 
 	docker logout

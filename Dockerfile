@@ -52,8 +52,9 @@ RUN apt-get update && apt-get -y upgrade && \
 # These environment variables may be overridden by the pegaus-build-var.env
 # file but are probably
 
-# Docker registry
+# Docker repository name and user name
 ENV DOCKER_REGISTRY=kschopmeyer
+ENV DOCKER_USER
 
 # OpenPegasus Server name and version
 ENV SERVER_IMAGE="openpegasus-server"
