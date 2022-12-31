@@ -270,6 +270,7 @@ publish:
 	@echo "Pushing the built WBEM Server image to private image registry..."
 
 	docker logout
+	# Docker password must be supplied at terminal
 	docker login -u $${DOCKER_USER}
 	docker tag ${SERVER_IMAGE}:${SERVER_IMAGE_VERSION} ${DOCKER_REGISTRY}/${SERVER_IMAGE}:${SERVER_IMAGE_VERSION}
 	docker push ${DOCKER_REGISTRY}/${SERVER_IMAGE}:${SERVER_IMAGE_VERSION}
