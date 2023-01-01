@@ -185,9 +185,8 @@ build-server: build-server.done
 # tests could be executed manually by running make <test target> in the
 # pegasus directory.
 
-.PHONY: test-server
 test-server.done: build-server.done
-	@echo "Testing the server in the build container..."
+	@echo "Testing the BEM server in the build container..."
 	@echo "Set Interop Namespace to root/PG_InterOp..."
 	@export PEGASUS_INTEROP_NAMESPACE="root/PG_InterOp"
 
@@ -206,7 +205,7 @@ test-server.done: build-server.done
 	@echo "Target $@ complete"
 
 .PHONY: test-server
-test-server: test_server.done
+test-server: test-server.done
 
 # Build the CIM repository define for the OpenPegasus testsuite.  This is
 # based on the the targets defined in pegasus/TestMakefile. This defines the
