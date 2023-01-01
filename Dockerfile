@@ -33,14 +33,15 @@ RUN apt-get update && apt-get -y upgrade && \
     apt-get install -y --no-install-recommends \
     openssl \
     docker.io \
-    # Build tools and the gcc compiler
+    # Build tools and the gcc compiler and
+    # Development support tools that are required
     build-essential \
-    # Some development support tools that might be useful
-    ack-grep \
     git \
+    # Development tools that are optional but support developing in container
     tmux \
     curl \
     vim \
+    ack-grep \
     # The following libraries are required to compile OpenPegasus
     libssl-dev \
     libpam0g-dev \
@@ -52,9 +53,10 @@ RUN apt-get update && apt-get -y upgrade && \
 # These environment variables may be overridden by the pegaus-build-var.env
 # file but are probably
 
-# Docker repository name and user name
+# Docker repository name and user name. Docker image repository name and user
+# name to access the repository
 ENV DOCKER_REGISTRY=kschopmeyer
-ENV DOCKER_USER
+ENV DOCKER_USER=kschopmeyer
 
 # OpenPegasus Server name and version
 ENV SERVER_IMAGE="openpegasus-server"

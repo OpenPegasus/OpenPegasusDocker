@@ -187,7 +187,8 @@ build-server: build-server.done
 
 .PHONY: test-server
 test-server.done: build-server.done
-	@echo "Testing the server in the build container..."
+	@echo "Testing the WBEM server in the build container..."
+
 	@echo "Set Interop Namespace to root/PG_InterOp..."
 	@export PEGASUS_INTEROP_NAMESPACE="root/PG_InterOp"
 
@@ -206,7 +207,7 @@ test-server.done: build-server.done
 	@echo "Target $@ complete"
 
 .PHONY: test-server
-test-server: test_server.done
+test-server: test-server.done
 
 # Build the CIM repository define for the OpenPegasus testsuite.  This is
 # based on the the targets defined in pegasus/TestMakefile. This defines the
@@ -270,6 +271,7 @@ publish:
 	@echo "Pushing the built WBEM Server image to private image registry..."
 
 	docker logout
+	# Docker password must be supplied at terminal
 	docker login -u $${DOCKER_USER}
 	docker tag ${SERVER_IMAGE}:${SERVER_IMAGE_VERSION} ${DOCKER_REGISTRY}/${SERVER_IMAGE}:${SERVER_IMAGE_VERSION}
 	docker push ${DOCKER_REGISTRY}/${SERVER_IMAGE}:${SERVER_IMAGE_VERSION}
