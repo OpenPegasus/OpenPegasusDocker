@@ -185,8 +185,10 @@ build-server: build-server.done
 # tests could be executed manually by running make <test target> in the
 # pegasus directory.
 
+.PHONY: test-server
 test-server.done: build-server.done
-	@echo "Testing the BEM server in the build container..."
+	@echo "Testing the WBEM server in the build container..."
+
 	@echo "Set Interop Namespace to root/PG_InterOp..."
 	@export PEGASUS_INTEROP_NAMESPACE="root/PG_InterOp"
 

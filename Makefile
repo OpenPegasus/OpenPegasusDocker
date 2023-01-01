@@ -10,10 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-DOCKER_REGISTRY=kschopmeyer
-=======
 # Usage:
 #
 # make lint   	Lint the Dockerfile.
@@ -30,11 +26,9 @@ DOCKER_REGISTRY=kschopmeyer
 # where the tag defines both the container type (build or server)
 DOCKER_USER=kschopmeyer
 DOCKER_REGISTRY=$(DOCKER_USER)
->>>>>>> 94a06e8 (Modify the publish targets of both  Makefiles)
 BUILD_IMAGE=openpegasus-build
 RUN_IMAGE=openpegasus-server
-=======
->>>>>>> 7c38f01 (WIP)
+
 SHELL := /bin/bash
 
 # Major OpenPegasus variables used.
@@ -126,6 +120,8 @@ help:
 	@echo "    creating and publishing the runtime container."
 	@echo ""
 	@echo "Build variables"
+	@echo "  Docker image name = ${BUILD_IMAGE}"
+	@echo "  Docker image version tag = ${DOCKER_TAG}"
 	@echo "  Docker registry (DOCKER_REGISTRY) = ${DOCKER_REGISTRY}"
 	@echo "  Docker image name (BUILD_IMAGE) = ${BUILD_IMAGE}"
 	@echo "  Docker image version tag (DOCKER_TAG) = ${DOCKER_TAG}"
@@ -176,8 +172,7 @@ clean-build-image:
 
 .PHONY: run-build-image
 run-build-image:
-	@echo "RUN-START = ${RUN-START} BUILD-START = ${BUILD-START}"
-	@echo Run the build image ${DOCKER_REGISTRY}/${BUILD_IMAGE}:${DOCKER_TAG}
+	@echo Run the build image ${DOCKER_USER}/${BUILD_IMAGE}:${DOCKER_TAG}
 	sudo docker run -it --rm \
 		-v /home/${USER}/.ssh:/root/.ssh \
 		--env-file=${PEGASUS_ENV_VAR_FILE} \
