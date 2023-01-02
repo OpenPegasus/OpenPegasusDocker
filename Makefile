@@ -10,30 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Usage:
-#
-# make lint   	Lint the Dockerfile.
-# make build  	Build the build image.
-# make deploy   Deploy, push the build image to an image registry.
-# make clean	Remove the build image from the local machine.
-# Docker file for OpenPegasus WBEM Server build.  This file
-# builds the docker image using Ubuntu and installs the OpenPegasus
-# make file into that container.
-
-# Currently the registry and build-image are defined to place both server
-# and build containers in the same docker repository. They are named
-# Registry - (username)/OpenPegasus:tag
-# where the tag defines both the container type (build or server)
-DOCKER_USER=kschopmeyer
-DOCKER_REGISTRY=$(DOCKER_USER)
-BUILD_IMAGE=openpegasus-build
-RUN_IMAGE=openpegasus-server
-
 SHELL := /bin/bash
 
 # Major OpenPegasus variables used.
 # Docker Account containing OpenPegasus build and run images
 DOCKER_REGISTRY=kschopmeyer
+# TODO: Do not want user name in this file.  Having problems with
+# getting it from environment so this is temp for 0.13.0 version
+DOCKER_USER=kschopmeyer
 # Name for the Docker build image
 BUILD_IMAGE=openpegasus-build
 # Name for the Docker WBEM server run image
@@ -52,7 +36,7 @@ PEGASUS_ENV_VAR_FILE := "pegasus-build-vars.env"
 
 # Thus, the run container can be started with a terminal rather than starting the
 # the WBEM server using:
-#    make run-server-image RUN=bash
+#    make run-server-image RUN=auto
 
 MANUAL := "/bin/bash"
 # NOTE: AUTO must be empty and not empty string. This is string set into
@@ -64,27 +48,27 @@ AUTO :=
 # in the console. Make help can be used to see build alternatives),
 # or variable not set in which case the creation of the build image defaults to
 # auto and the wbem server build image defaults to manual
-ifdef START-MODE
-  ifeq ($(START-MODE),auto)
-    BUILD-START-MODE = ${AUTO}
+ifdef BUILD-START-MODE
+  ifeq ($(BUILD-START-MODE),auto)
+    BUILD-START-STR = ${AUTO}
   else
-    ifeq ($(START-MODE),manual)
-      BUILD-START-MODE = ${MANUAL}
+    ifeq ($(BUILD-START-MODE),manual)
+      BUILD-START-STR = ${MANUAL}
     else
-      $(error BUILD-START-MODE=${START-MODE} invalid, must be auto or bash. Default: manual)
+      $(error BUILD-START-MODE=${BUILD-START-MODE} invalid, must be auto or bash. Default: manual)
     endif
   endif
 else
-    BUILD-START-MODE = ${MANUAL}
+    BUILD-START-STR = ${MANUAL}
 endif
 
 # Default for openpegasus-server is to start wbem server upon run.
 # Alternative values are true, false, variable not set.
-ifdef SERVER
-  ifeq ($(RUN),auto)
+ifdef SERVER-START-MODE
+  ifeq ($(SERVER-START-MODE),auto)
     SERVER-START_STR = ${MANUAL}
   else
-    ifeq ($(SERVER),manual)
+    ifeq ($(SERVER-START-MODE),manual)
       SERVER-START_STR = ${AUTO}
     else
       $(error SERVER_START_MODE=${SERVER_START_MODE} invalid. Must be auto or manual. Default: auto)
@@ -127,14 +111,10 @@ help:
 	@echo "  Docker image version tag (DOCKER_TAG) = ${DOCKER_TAG}"
 	@echo "  Pegasus build environment variables file () = ${PEGASUS_ENV_VAR_FILE}."
 	@echo "     This file is required as it defines the pegasus build configuration."
-	@echo "  Start run image choice (RUNDEVMODE) = ${RUNDEVMODE}, default start server"
-	@echo "  Start run image choice (BLDDEVMODE) = ${BLDDEVMODE}, default start bash"
-	@echo "  Values are true/false or not set. May be set on make command line"
-	@echo "  Docker image name = ${BUILD_IMAGE}"
-	@echo "  Docker image version tag = ${DOCKER_TAG}"
-	@echo "  Start build image start choice (START-MODE) = ${START-MODE}, default start bash"
-	@echo "  Start run image start choice (RUN) = ${RUN}, default start WBEM server:"
-	@echo "     Values are true/false or not set. May be set on make command line"
+	@echo "  Start build image choice BUILD-START-MODE = ${BUILD-START-MODE}, default manual"
+	@echo "  Start run image choice SERVER-START-MODE = ${SERVER-START-MODE}, default auto"
+	@echo "     Values are auto/manual or not set. May be set on make command line or env var"	
+	@echo ""
 	@echo ""
 	@echo "NOTE: DOCKER_PASSWORD is requested for publish"
 	@echo ""
@@ -150,7 +130,7 @@ publish-build-image:
 	docker logout
 	docker image tag ${DOCKER_REGISTRY}/${BUILD_IMAGE}:$(DOCKER_TAG) ${DOCKER_REGISTRY}/${BUILD_IMAGE}:${DOCKER_TAG}
 	# User must supply password at terminal
-	docker login -u $${DOCKER_USER}
+	docker login -u ${DOCKER_USER}
 	docker push ${DOCKER_REGISTRY}/${BUILD_IMAGE}:$(DOCKER_TAG)
 	docker logout
 
@@ -172,6 +152,7 @@ clean-build-image:
 
 .PHONY: run-build-image
 run-build-image:
+	@echo "BUILD-START-MODE = ${BUILD-START-MODE} SERVER-START-MODE = ${SERVER-START-MODE}"
 	@echo Run the build image ${DOCKER_USER}/${BUILD_IMAGE}:${DOCKER_TAG}
 	sudo docker run -it --rm \
 		-v /home/${USER}/.ssh:/root/.ssh \
@@ -180,7 +161,7 @@ run-build-image:
 
 .PHONY: run-server-image
 run-server-image:
-	@echo "RUN-START-MODE = ${RUN-START-MODE} BUILD-START-MODE = ${BUILD-START-MODE}"
+	@echo "SERVER-START-MODE = ${SERVER-START-MODE}
 	@echo run the local server container image ${RUN_IMAGE}:${DOCKER_TAG}
 	@echo http port = 15988, https port = 15989
 	sudo docker run -it --rm  -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 \
