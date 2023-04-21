@@ -2,11 +2,26 @@
 
 ##Change log
 
-## OpenPegasusDocker 0.1.2 - Release
+## OpenPegasusDocker 0.1.3 - Release
 
 Status: **Development**
 
-Release Date:
+Release Date:  Not Released
+
+branch: main
+
+### Bugs
+
+### Enhancements
+
+### Cleanup
+
+
+## OpenPegasusDocker 0.1.2 - Release
+
+Status: **Released**
+
+Release Date:  Dec 2022
 
 branch: main
 

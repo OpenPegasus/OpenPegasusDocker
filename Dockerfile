@@ -61,7 +61,7 @@ ENV DOCKER_USER=kschopmeyer
 # OpenPegasus Server name and version
 ENV SERVER_IMAGE="openpegasus-server"
 # TODO: Get version from version.txt might be better
-ENV SERVER_IMAGE_VERSION="0.1.2"
+ENV SERVER_IMAGE_VERSION="0.1.3.DEV"
 
 # Git Repository name
 ENV PEGASUS_GIT_REPOSITORY=http://github.com/OpenPegasus/OpenPegasus.git

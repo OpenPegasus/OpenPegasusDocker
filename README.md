@@ -77,9 +77,9 @@ make build
 This will lint the Dockerfile and then build the basic image provided no
 linting errors were found.
 
-This image will contain the make file Makefile_wbem-build (renamed to Makefile)
-which is the file that defines the targets for building the OpenPegasus WBEm
-server from its source code.
+This image will contain the make file Makefile_wbem-build (renamed to Makefile
+when the build image is created) which is the file that defines the targets for
+building the OpenPegasus WBEm server from its source code.
 
 The WBEM Build makefile supports the following targets and a number of subtargets
 that are listed with Makefile help
@@ -119,10 +119,14 @@ An OpenPegasus WBEM server image can be created by just running the
 following:
 
 1. Clone this repository to your local machine
-2. Create the build image which consists of Ubuntu, updates to Ubuntu and
-   build tools to compile OpenPegasus source code (`make build`)
-3. Run the build container (`make run-build-image`)
-4. Move to the terminal started when the build image starts
+2. Create the build image which consists of Ubuntu Linux OS, updates to Ubuntu and
+   build tools to compile OpenPegasus source code and a Makefile that
+   defines the build, test, and deploy of an OpenPegasus Docker image.
+3. Run the build container (`make run-build-image`). The Makefile option
+   BUILD_STARTUP_MODE defines whether the process to build the WBEM server image
+   is automatic or manual.
+4. Move to the terminal started when the build image starts if the manual
+   execution of the build process was defined.
 5. Build the OpenPegasus WBEM server (`make build`)
 6. Deploy the OpenPegasus server container (`make deploy`)
 7. Return to the the original terminal window.
@@ -153,6 +157,19 @@ make build
 make deploy
 # exit the build container and start the pegasus run container
 make run-server-container
+
+```
+
+Or to automatically execute the whole process from the console:
+
+```console
+git clone https://github.com/OpenPegasus/OpenPegasusDocker.git
+make build
+make run-build-container BUILD_STARTUP_MODE=auto
+# When the new WBEM server image has been built.
+make run-server-image
+# The server container will be started and the OpenPegasus WBEM server
+will be running within that container.
 
 ```
 
@@ -224,11 +241,9 @@ The corresponding image for the running server is:
 kschopmeyer/openpegasus-server:0.1.2
 ```
 
-
-
 ## Run the Server Image
 
-To run the server simply execute the following command line . This runs the container and
+To run the server simply execute the following command line. This runs the container and
 starts the OpenPegasus web server in the container.
 
 ```console
@@ -243,7 +258,7 @@ sudo docker run -it --rm -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 openpeg
 
 ```
 
-or use  the make target  `make run-server-container`.
+or use the make target  `make run-server-container` from the clone of this git repository.
 
 To run the server image and not automatically start OpenPegasus when the server starts enter the run command
 with the last parameter ("/bin/bash")
@@ -252,6 +267,13 @@ The above command starts the server
 
 ```console
 sudo docker run -it --rm -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 kschopmeyer/openpegasus-server:0.1.2
+```
+
+or
+
+```console
+make run-server-image
+
 ```
 
 The bash shell will have the directory containing pegasus components root
@@ -281,11 +303,11 @@ OpenPegasus utility cimcli that has commands to execute requests on the server.
 The simplest command is "cimcli ns" that displays the namespaces defined for
 the wbem server and is a good indicator that the server is working correctly.
 
-The command line "exit" command can be used to shut down the server container will go through a shutdown process and return to the
-console interface.
+The command line "docker stop pegasus" command can be used to shut down the server container
+will go through a shutdown process and return to the console interface.
 
 The server will start and print out to the console that it is listening on the
-default ports 5988 (http) and 5989 (https).
+ports 15988 (http) and 15989 (https).
 
 ## Configuration of OpenPegasus in the run image
 
@@ -318,7 +340,7 @@ Please see [FAQ.md](./FAQ.md) for frequently asked questions.
    Yes.  It is a full OpenPegasus implementation except that rather than having
    a model implementation that strictly adheres to to a DMTF or SMI profile, it
    contains components of these models that are used for testing the intrigity of
-   the server.  Using a tool like OpenPegasus or pywbemtools, the server can
+   the OpenPegasus WBEM server.  Using a tool like OpenPegasus or pywbemtools, the server can
    be explored from either a console attached to the container or directly
    through the CIM/XML interface using the ports that have been defined for the
    server in the startup command.
