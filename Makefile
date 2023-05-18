@@ -55,7 +55,7 @@ PEGASUS_BUILD_ENV_VAR_FILE := "pegasus-build-vars.env"
 #    make run-server-image RUN=auto
 
 MANUAL_STR := /bin/bash
-# NOTE: AUTO must be empty and not empty string. This is string set into
+# NOTE: AUTO_STR must be empty and not empty string. This is string set into
 # the docker run command.
 AUTO_STR :=
 

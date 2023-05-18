@@ -4,24 +4,37 @@
 
 ## OpenPegasusDocker 0.1.3 - Release
 
-Status: **Development**
+Status: **Released**
 
-Release Date:  Not Released
-
+Release Date:  23 May 2023
 branch: main
 
 ### Bugs
+1. Errors in the logic to assign the START_MODE for the build and server
+   containers.  Fixed.
 
 ### Enhancements
 
 ### Cleanup
+
+1. Change the container name to openpegasus
+2. Several minor cleanups.
+3. Clean up README
+4. Added new directory to be passed on to server container. This
+   directory is named supplementary_run_files and can contain
+   other files to be used in the running server container.
+5. Added more tools to the build image.  Since there is no major
+   issue with the size of this container, additional test and
+   develop files are not important. For the moment it only contains
+   the file send_indication.sh which can be used from the container
+   to test sending indications to a pywbemlistener.
 
 
 ## OpenPegasusDocker 0.1.2 - Release
 
 Status: **Released**
 
-Release Date:  Dec 2022
+Release Date:  December 2022
 
 branch: main
 

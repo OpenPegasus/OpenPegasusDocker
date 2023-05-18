@@ -49,6 +49,9 @@ The following must be present prior to building images.
 * Docker version 19.x.x or later
 
 ## Building the Docker images
+
+### Building the Docker build image
+
 Building the OpenPegasus WBEM Server image is a two step process:
 
 1. Building the server build image which starts with a Linux image (Ubuntu) and
@@ -74,8 +77,8 @@ execute the following build command.
 ```console
 make build
 ```
-This will lint the Dockerfile and then build the basic image provided no
-linting errors were found.
+This will lint the Dockerfile (if docker lint was installed in the host system)
+and then build the basic image provided no linting errors were found.
 
 This image will contain the make file Makefile_wbem-build (renamed to Makefile
 when the build image is created) which is the file that defines the targets for
@@ -97,22 +100,23 @@ make run-server-image	    Run OpenPegasus WBEM server docker image"
 ```
 
 ### Build the OpenPegasus WBEM Server Image
+
 Using the build image the server run image can now be built.
 
 Building the OpenPegasus WBEM Server image involves the following steps run within
 the build container:
 1. Retrieving the OpenPegasus source code from github OpenPegasus repository
 2. Building OpenPegasus from this source code.
-   1. Since the build process for OpenPegasus involves setting a number of
+   a. Since the build process for OpenPegasus involves setting a number of
       environment variables that control the build, A set of these variables
       is defined in the file `pegasus_build_vars.env` which is attached to the
       build build image when that image is run (`--env-file` option)
-   2. Running tests on the build OpenPegasus code to confirm that the build
+   b. Running tests on the build OpenPegasus code to confirm that the build
       was executed properly.
-   3. Cleaning unwanted components out of the build result to minimize the
+   c. Cleaning unwanted components out of the build result to minimize the
       built image. This includes removing the intermediate build components,
       and most of the test executables/files and other temporary components.
-   4. Provisioning the WBEM server with a CIM model and possibly building and
+   d. Provisioning the WBEM server with a CIM model and possibly building and
       installing providers for the target environment.
 
 An OpenPegasus WBEM server image can be created by just running the
@@ -121,29 +125,32 @@ following:
 1. Clone this repository to your local machine
 2. Create the build image which consists of Ubuntu Linux OS, updates to Ubuntu and
    build tools to compile OpenPegasus source code and a Makefile that
-   defines the build, test, and deploy of an OpenPegasus Docker image.
+   defines the build, test, and deploy of an OpenPegasus Docker image
+   (`make build').
 3. Run the build container (`make run-build-image`). The Makefile option
-   BUILD_STARTUP_MODE defines whether the process to build the WBEM server image
+   BUILD-START-MODE defines whether the process to build the WBEM server image
    is automatic or manual.
-4. Move to the terminal started when the build image starts if the manual
-   execution of the build process was defined.
-5. Build the OpenPegasus WBEM server (`make build`)
-6. Deploy the OpenPegasus server container (`make deploy`)
+4. Move to the terminal started when the build image  is started if the manual
+   execution of the build process (default mode) was defined.
+5. Build the OpenPegasus WBEM server (`make build`).
+6. Deploy the OpenPegasus server container (`make deploy`).
 7. Return to the the original terminal window.
-8. Start the OpenPegasus WBEM server run image (make run-server-image)
+8. Start the OpenPegasus WBEM server run image (make run-server-image).
 9. The WBEM server should be running in its Docker container.  This can be
    tested by:
-   1. View the WEB page displayed by the container at the same ports as its
+   a. View the WEB page displayed by the container at the same ports as its
       XML ports (default 15988 and 15989)
-   2. Run a WBEM client against the server at either of the ports (for example
+   b. Run a WBEM client against the server at either of the ports (for example
       run the pywbemtools client)
-   3. Test that the ports are open
+   c. Test that the ports are open
 
-The WBEM server may be started when the openpegas-server images is started with the
-option DEVMODE as follows:
+### Running the OpenPegasus WBEM Server Image
+
+The OpenPegasus WBEM server may be started when the openpegas-server images is
+started with the make file option SERVER-START-MODE as follows:
 
 ```console
-make run-server-image DEVMODE=true
+make run-server-image SERVER-START-MODE=manual
 ```
 
 Thus the set of commands below will create and run an OpenPegasus server container:
@@ -241,45 +248,30 @@ The corresponding image for the running server is:
 kschopmeyer/openpegasus-server:0.1.2
 ```
 
-## Run the Server Image
+## Run the OpenPegasus WBEM Server Image
 
-To run the server simply execute the following command line. This runs the container and
-starts the OpenPegasus web server in the container.
+### Start the WBEM Server container using the makefile
 
-```console
-sudo docker run -it --rm -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 kschopmeyer/openpegasus-server:0.1.2
-
-```
-
-or if using a local run image created by the build container
-
-```console
-sudo docker run -it --rm -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 openpegasus-server:0.1.2
-
-```
-
-or use the make target  `make run-server-container` from the clone of this git repository.
-
-To run the server image and not automatically start OpenPegasus when the server starts enter the run command
-with the last parameter ("/bin/bash")
-
-The above command starts the server
-
-```console
-sudo docker run -it --rm -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 kschopmeyer/openpegasus-server:0.1.2
-```
-
-or
+To start OpenPegasus in the server container from the make file defined in
+this github repository  and start OpenPegasus in the container on startup:
 
 ```console
 make run-server-image
 
 ```
+or to start the server container but not start OpenPegasus when the
+container starts:
+
+```console
+make run-server-image SERVER-START-MODE=manual
 
 The bash shell will have the directory containing pegasus components root
-directory as the current working directory.  From there you can execute any
-cimserver or cimcli commands.  To start the server simply execute the
-following.
+directory as the current working directory.  From there you can start the
+OpenPegasus server (`cimserver` to start the server as a daemon ) and
+still have a console for terminal commands such as a quick test of the
+server (`cimcli ns`)To start the OpenPegasus server when the the server container
+was started in manual mode simply execute the
+following:
 
 ```console
 cimserver
@@ -308,6 +300,39 @@ will go through a shutdown process and return to the console interface.
 
 The server will start and print out to the console that it is listening on the
 ports 15988 (http) and 15989 (https).
+
+
+
+
+
+### Starting the WBEM Server container directly using docker commands
+
+To run the server simply execute the following command line. This runs the container and
+starts the OpenPegasus web server in the container.
+
+```console
+sudo docker run -it --rm -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 kschopmeyer/openpegasus-server:0.1.2
+
+```
+
+or if using a local run image created by the build container
+
+```console
+sudo docker run -it --rm -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 openpegasus-server:0.1.2
+
+```
+
+or use the make target  `make run-server-container` from the clone of this git repository.
+
+To run the server image and not automatically start OpenPegasus when the server starts enter the run command
+with the last parameter ("/bin/bash")
+
+The above command starts the server
+
+```console
+sudo docker run -it --rm -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 kschopmeyer/openpegasus-server:0.1.2
+```
+
 
 ## Configuration of OpenPegasus in the run image
 
