@@ -265,6 +265,13 @@ container starts:
 ```console
 make run-server-image SERVER-START-MODE=manual
 
+or
+
+```console
+make run-server-image
+
+```
+
 The bash shell will have the directory containing pegasus components root
 directory as the current working directory.  From there you can start the
 OpenPegasus server (`cimserver` to start the server as a daemon ) and
@@ -300,10 +307,6 @@ will go through a shutdown process and return to the console interface.
 
 The server will start and print out to the console that it is listening on the
 ports 15988 (http) and 15989 (https).
-
-
-
-
 
 ### Starting the WBEM Server container directly using docker commands
 

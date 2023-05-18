@@ -10,30 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Usage:
-#
-# make lint   	Lint the Dockerfile.
-# make build  	Build the build image.
-# make deploy   Deploy, push the build image to an image registry.
-# make clean	Remove the build image from the local machine.
-# Docker file for OpenPegasus WBEM Server build.  This file
-# builds the docker image using Ubuntu and installs the OpenPegasus
-# make file into that container.
-
-# Currently the registry and build-image are defined to place both server
-# and build containers in the same docker repository. They are named
-# Registry - (username)/OpenPegasus:tag
-# where the tag defines both the container type (build or server)
-DOCKER_USER=kschopmeyer
-DOCKER_REGISTRY=$(DOCKER_USER)
-BUILD_IMAGE=openpegasus-build
-RUN_IMAGE=openpegasus-server
-
 SHELL := /bin/bash
 
 # Major OpenPegasus variables used.
 # Docker Account containing OpenPegasus build and run images
 DOCKER_REGISTRY=kschopmeyer
+# TODO: Do not want user name in this file.  Having problems with
+# getting it from environment so this is temp for 0.13.0 version
+DOCKER_USER=kschopmeyer
 # Name for the Docker build image
 BUILD_IMAGE=openpegasus-build
 # Name for the Docker WBEM server run image
