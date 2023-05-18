@@ -63,7 +63,7 @@ help:
 	@echo "        build-server"
 	@echo "        test-server"
 	@echo "  make deploy        Build run image into local docker repository."
-	@echo "                     with <Name>:<version> but no <repository name>.""
+	@echo "                     with <Name>:<version> but no <repository name>."
 	@echo "       deploy subtargets:"
 	@echo "         make build-image   Create the local server run image."
 	@echo "         make provision-server, install repository, certs, etc.."

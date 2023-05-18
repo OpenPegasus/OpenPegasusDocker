@@ -37,9 +37,14 @@ RUN apt-get update && apt-get -y upgrade && \
     # Development support tools that are required
     build-essential \
     git \
+    # Network tools useful for development.  I.e. talking to host
+    # net-tools installs ifconfig, iproute2 install ip command
+    net-tools \
+    iproute2 \
+    iputils-ping \
+    curl \
     # Development tools that are optional but support developing in container
     tmux \
-    curl \
     vim \
     ack-grep \
     # The following libraries are required to compile OpenPegasus
@@ -61,9 +66,11 @@ ENV DOCKER_USER=kschopmeyer
 # OpenPegasus Server name and version
 ENV SERVER_IMAGE="openpegasus-server"
 # TODO: Get version from version.txt might be better
-ENV SERVER_IMAGE_VERSION="0.1.2"
+ENV SERVER_IMAGE_VERSION="0.1.3.DEV"
+# The following fails.
+# ENV SERVER_IMAGE_VERSION=$(shell cat version.txt)
 
-# Git Repository name
+# Git OpenPegasus Repository name. Contains OpenPegasus source code
 ENV PEGASUS_GIT_REPOSITORY=http://github.com/OpenPegasus/OpenPegasus.git
 
 # OpenPegasus git repository branch name and tag to checkout for the OpenPegasus build
@@ -74,8 +81,9 @@ ENV PEGASUS_GIT_REPOSITORY=http://github.com/OpenPegasus/OpenPegasus.git
 # container with a released pegasus version.
 #
 # If PEGASUS_GIT_BRANCH is set, the complete git repository is cloned and
-# the git checkout command used to activate the branch defined by
-# PEGASUS_GIT_BRANCH. This can be useful for testing OpenPegasus in a container
+# the git checkout command used to activate the git branch defined by
+# PEGASUS_GIT_BRANCH. This can be useful for testing OpenPegasus in a container.
+# The default is the main branch
 
 # PEGASUS_GIT_TAG and PEGASUS_GIT_BRANCH are mutually exclusive
 ENV PEGASUS_GIT_TAG="v2.14.3"
@@ -120,8 +128,8 @@ ENV PATH=${PEGASUS_HOME}/bin:$PATH
 # Settings that are flags, with values set to true, enable the action
 # simply through the existence of the variable.  The variables value has no
 # effect.
-# See OpenPegasus/pegasus/doc/BuildAndReleaseOptiions.html for more detailed information
-# on the options
+# See OpenPegasus/pegasus/doc/BuildAndReleaseOptiions.html for more detailed
+# information on the options
 
 # Platform defined for the docker image
 # This should not change since we will always build the run container with
@@ -132,6 +140,11 @@ ENV PEGASUS_PLATFORM=LINUX_X86_64_GNU
 # the build image
 COPY ./Makefile_wbemserver-build ${PEGASUS_BUILD_ROOT}/Makefile
 COPY ./Dockerfile_wbemserver-build ${PEGASUS_BUILD_ROOT}/Dockerfile
+
+# Copy any files in the supplementary_run_files directory to the same named
+# directory in the build image.  These files will then be copied to the
+# build image in the same directory name.
+COPY ./supplementary_run_files ${PEGASUS_BUILD_ROOT}/supplementary_run_files/
 
 # OpenPegasus Build folder
 WORKDIR ${PEGASUS_BUILD_ROOT}

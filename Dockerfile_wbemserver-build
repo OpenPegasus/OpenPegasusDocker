@@ -9,9 +9,11 @@ USER root
 SHELL [ "/bin/bash", "-o", "pipefail", "-c" ]
 
 # Package installations to support OpenPegasus run time image
-RUN apt-get update && \
+RUN apt-get update  && apt-get -y upgrade && \
     apt-get install -y  --no-install-recommends \
     openssl \
+    # Test tool. Not normally installed
+    # curl \
     && rm -rf /var/lib/apt/lists*
 
 # Pegasus directories.  The OpenPegasus run directory is the single directory
@@ -30,6 +32,11 @@ ENV LD_LIBRARY_PATH=${PEGASUS_RUN_ROOT}/lib:${LD_LIBRARY_PATH}
 COPY ./openpegasus_home ${PEGASUS_RUN_ROOT}
 # Copy the build environment variables as record of the build configuration
 COPY ./pegasus-build-variables.env ${PEGASUS_RUN_ROOT}
+
+# Copy all files from the supplementary_run_files to same directory in image
+# Any files used in development, etc. can be placed here without affecting
+# the Docker or make files.
+COPY ./supplementary_run_files/ ${PEGASUS_RUN_ROOT}/supplementary_run_files/
 
 # Pegasus Run components directory. This directory contains the bin, lib,
 # repository, , Revocation list, and trace directories and the certificates.
