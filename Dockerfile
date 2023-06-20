@@ -33,8 +33,8 @@ RUN apt-get update && apt-get -y upgrade && \
     apt-get install -y --no-install-recommends \
     openssl \
     docker.io \
-    # Build tools and the gcc compiler and
-    # Development support tools that are required
+    # Build tools, the gcc compiler, and
+    # development support tools that are required
     build-essential \
     git \
     # Network tools useful for development.  I.e. talking to host
@@ -63,21 +63,22 @@ RUN apt-get update && apt-get -y upgrade && \
 ENV DOCKER_REGISTRY=kschopmeyer
 ENV DOCKER_USER=kschopmeyer
 
-# OpenPegasus Server name and version
+# OpenPegasus Server image name
 ENV SERVER_IMAGE="openpegasus-server"
 # TODO: Get version from version.txt might be better
-ENV SERVER_IMAGE_VERSION="0.1.3.DEV"
+ENV SERVER_IMAGE_VERSION="0.1.3"
 # The following fails.
 # ENV SERVER_IMAGE_VERSION=$(shell cat version.txt)
 
 # Git OpenPegasus Repository name. Contains OpenPegasus source code
 ENV PEGASUS_GIT_REPOSITORY=http://github.com/OpenPegasus/OpenPegasus.git
 
-# OpenPegasus git repository branch name and tag to checkout for the OpenPegasus build
-# Use http to clone repository because no authentication required. Either the
-# tag or branch define what to clone. The  if neither is set default is to clone main
-# If PEGASUS_GIT_TAG set, only that tagged branch is cloned.  This can be used
-# to build with tagged OpenPegasus releases. This must be used to build a
+# OpenPegasus git repository branch name and tag to checkout for the
+# OpenPegasus build # Use http to clone repository because no authentication
+# required. Either the # tag or branch define what to clone. The  if neither is
+# set default is to clone main # If PEGASUS_GIT_TAG set and PEGASUS_GIT_BRANCH is
+# not set, only that tagged branch is cloned.  This can be used # to build with
+# tagged OpenPegasus releases. PEGASUS_GIT_TAG is normally used to build a #
 # container with a released pegasus version.
 #
 # If PEGASUS_GIT_BRANCH is set, the complete git repository is cloned and
@@ -85,12 +86,27 @@ ENV PEGASUS_GIT_REPOSITORY=http://github.com/OpenPegasus/OpenPegasus.git
 # PEGASUS_GIT_BRANCH. This can be useful for testing OpenPegasus in a container.
 # The default is the main branch
 
-# PEGASUS_GIT_TAG and PEGASUS_GIT_BRANCH are mutually exclusive
-ENV PEGASUS_GIT_TAG="v2.14.3"
-ENV PEGASUS_GIT_BRANCH=""
+# PEGASUS_GIT_TAG and PEGASUS_GIT_BRANCH define the github source tag/branch
+# for cloning OpenPegasus.
+# The existence of PEGASUS_GIT_BRANCH env variable overrides PEGASUS_GIT_TAG.
+# PEGASUS_GIT_TAG defines a releas tag as the source. It is preset to the
+# current latest release of OpenPegasus.
+
+ENV PEGASUS_GIT_TAG="v2.14.4"
+
+# PEGASUS_GIT_BRANCH. This can be useful for testing OpenPegasus  git branches
+# in a container. The PEGASUS_GIT_BRANCH must contain a valid git branch
+# name (including the main branch).
+# Uncomment the following line to clone current git main branch. Change main to
+# a valid git branch name to clone that branch. An alternative is to include
+# --env PEGASUS_GIT_BRANCH=<branch name on the Docker run command for the build
+# image or simple append PEGASUS_GIT_BRANCH=<branch name> to the
+# make run-build-server Makefile target.
+
+# ENV PEGASUS_GIT_BRANCH="main"
 
 #
-# Define environment variables for the Pegasus file paths
+# Environment variables for the Pegasus file paths
 # Normally these environment variables should not be changed
 #
 
@@ -119,7 +135,7 @@ ENV PATH=${PEGASUS_HOME}/bin:$PATH
 # NOTE: Running the build container requires that the option --env-file be
 # defined.
 #
-# OpenPegasus compile variables. See OpenPegasus documentation for more
+# OpenPegasus build variables. See OpenPegasus documentation for more
 # detailed information on particular variables.
 # These environment variables are used during the
 # build of OpenPegasus (They define the compile characteristics of
@@ -138,7 +154,7 @@ ENV PEGASUS_PLATFORM=LINUX_X86_64_GNU
 
 # Add the Makefile and Dockerfile for building the server image based on
 # the build image
-COPY ./Makefile_wbemserver-build ${PEGASUS_BUILD_ROOT}/Makefile
+COPY ./Makefile_wbemserver-build.mak ${PEGASUS_BUILD_ROOT}/Makefile
 COPY ./Dockerfile_wbemserver-build ${PEGASUS_BUILD_ROOT}/Dockerfile
 
 # Copy any files in the supplementary_run_files directory to the same named

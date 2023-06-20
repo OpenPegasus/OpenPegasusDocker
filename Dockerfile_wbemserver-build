@@ -1,5 +1,6 @@
 ######## Dockerfile for OpenPegasus WBEM server #######
-# This Dockerfile is used to build the run time image.
+# This Dockerfile is used define the docker image that runs the OpenPegasus
+# server image.
 
 FROM ubuntu:20.04
 
@@ -43,6 +44,6 @@ COPY ./supplementary_run_files/ ${PEGASUS_RUN_ROOT}/supplementary_run_files/
 #
 WORKDIR ${PEGASUS_RUN_ROOT}
 
-# Set to start server on startup. Can override on command line run command
+# Set to start WBEM server on startup. Can override on command line run command
 ENTRYPOINT ["/bin/bash", "-l", "-c"]
 CMD ["cimserver; tail -f /dev/null"]
