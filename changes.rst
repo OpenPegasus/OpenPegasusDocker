@@ -4,10 +4,7 @@
 
 ## OpenPegasusDocker 0.1.3 - Release
 
-Status: **Released**
-
-Release Date:  23 May 2023
-branch: main
+Status: **Released 21 Aug. 2023*
 
 ### Bugs
 1. Errors in the logic to assign the START_MODE for the build and server
@@ -28,6 +25,9 @@ branch: main
    develop files are not important. For the moment it only contains
    the file send_indication.sh which can be used from the container
    to test sending indications to a pywbemlistener.
+6. Change name of Makefile_wbemserver-build to add suffix of .mak
+7. Set version to 0.1.3
+8. Created attic directory and moved some obsolete files to that directory.
 
 
 ## OpenPegasusDocker 0.1.2 - Release

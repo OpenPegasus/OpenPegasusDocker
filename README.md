@@ -9,7 +9,7 @@
 
 ## Introduction
 
-This repository contains the Docker files and make files to create docker
+This repository contains Docker files and make files to create docker
 images for:
 
 * OpenPegasus development/build image in which an OpenPegasus
@@ -40,7 +40,7 @@ building the WBEM server including:
    can also be modified after the build images has started by modifying individual
    environment variables in the running build container.
 
-STATUS: Limited release 0.1.2.
+STATUS: Limited release 0.1.3.
 
 ## Requirements
 
@@ -63,7 +63,7 @@ and build OpenPegasus from within that build container.
    * building and testing OpenPegasus,
    * provisioning the server with a CIM repository and providers,
    * creating the OpenPegasus run image with just the runtime
-components of OpenPegasus and whatever provisioning choices you have made.
+     components of OpenPegasus and whatever provisioning choices you have made.
 
 OpenPegasus must be provisioned with providers and CIM Model
 components in a repository for the target environment.  The default is to build
@@ -77,7 +77,7 @@ execute the following build command.
 ```console
 make build
 ```
-This will lint the Dockerfile (if docker lint was installed in the host system)
+This will lint the Dockerfile (if Docker lint was installed in the host system)
 and then build the basic image provided no linting errors were found.
 
 This image will contain the make file Makefile_wbem-build (renamed to Makefile
@@ -99,14 +99,14 @@ make run-build-image        Run the build the docker pegasus server image."
 make run-server-image	    Run OpenPegasus WBEM server docker image"
 ```
 
-### Build the OpenPegasus WBEM Server Image
+### Build the OpenPegasus WBEM Server Docker Image
 
 Using the build image the server run image can now be built.
 
-Building the OpenPegasus WBEM Server image involves the following steps run within
-the build container:
+Building the OpenPegasus WBEM Server Docker image involves the following steps
+run within the build container:
 1. Retrieving the OpenPegasus source code from github OpenPegasus repository
-2. Building OpenPegasus from this source code.
+2. Compiling and linking OpenPegasus and its utilities from this source code.
    a. Since the build process for OpenPegasus involves setting a number of
       environment variables that control the build, A set of these variables
       is defined in the file `pegasus_build_vars.env` which is attached to the
@@ -123,16 +123,16 @@ An OpenPegasus WBEM server image can be created by just running the
 following:
 
 1. Clone this repository to your local machine
-2. Create the build image which consists of Ubuntu Linux OS, updates to Ubuntu and
-   build tools to compile OpenPegasus source code and a Makefile that
-   defines the build, test, and deploy of an OpenPegasus Docker image
-   (`make build').
+2. Create the build image which consists of Ubuntu Linux OS, updates to Ubuntu
+   and build tools to compile OpenPegasus source code and a Makefile that
+   defines the build, test, and deploy of an OpenPegasus Docker image (`make
+   build').
 3. Run the build container (`make run-build-image`). The Makefile option
    BUILD-START-MODE defines whether the process to build the WBEM server image
    is automatic or manual.
 4. Move to the terminal started when the build image  is started if the manual
    execution of the build process (default mode) was defined.
-5. Build the OpenPegasus WBEM server (`make build`).
+5. Build and test the OpenPegasus WBEM server (`make build`).
 6. Deploy the OpenPegasus server container (`make deploy`).
 7. Return to the the original terminal window.
 8. Start the OpenPegasus WBEM server run image (make run-server-image).
@@ -142,7 +142,7 @@ following:
       XML ports (default 15988 and 15989)
    b. Run a WBEM client against the server at either of the ports (for example
       run the pywbemtools client)
-   c. Test that the ports are open
+   c. Test that the ports are open.
 
 ### Running the OpenPegasus WBEM Server Image
 
@@ -162,7 +162,7 @@ make run-build-container
 # Go to the console in the running build container
 make build
 make deploy
-# exit the build container and start the pegasus run container
+# Exit the build container and start the pegasus run container
 make run-server-container
 
 ```
