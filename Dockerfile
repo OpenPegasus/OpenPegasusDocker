@@ -33,8 +33,8 @@ RUN apt-get update && apt-get -y upgrade && \
     apt-get install -y --no-install-recommends \
     openssl \
     docker.io \
-    # Build tools and the gcc compiler and
-    # Development support tools that are required
+    # Build tools, the gcc compiler, and
+    # development support tools that are required
     build-essential \
     git \
     # Network tools useful for development.  I.e. talking to host
@@ -66,7 +66,7 @@ ENV DOCKER_USER=kschopmeyer
 # OpenPegasus Server name and version
 ENV SERVER_IMAGE="openpegasus-server"
 # TODO: Get version from version.txt might be better
-ENV SERVER_IMAGE_VERSION="0.1.3.DEV"
+ENV SERVER_IMAGE_VERSION="0.1.3"
 # The following fails.
 # ENV SERVER_IMAGE_VERSION=$(shell cat version.txt)
 
@@ -138,7 +138,7 @@ ENV PEGASUS_PLATFORM=LINUX_X86_64_GNU
 
 # Add the Makefile and Dockerfile for building the server image based on
 # the build image
-COPY ./Makefile_wbemserver-build ${PEGASUS_BUILD_ROOT}/Makefile
+COPY ./Makefile_wbemserver-build.mak ${PEGASUS_BUILD_ROOT}/Makefile
 COPY ./Dockerfile_wbemserver-build ${PEGASUS_BUILD_ROOT}/Dockerfile
 
 # Copy any files in the supplementary_run_files directory to the same named
