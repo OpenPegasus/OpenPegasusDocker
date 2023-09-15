@@ -201,9 +201,6 @@ build-server: build-server.done
 test-server.done: build-server.done
 	@echo "Testing the WBEM server in the build container..."
 
-	@echo "Set Interop Namespace to root/PG_InterOp..."
-	@export PEGASUS_INTEROP_NAMESPACE="root/PG_InterOp"
-
 	@echo "Create the server build test repository..."
 	@$(MAKE) create_test_repository
 
@@ -224,7 +221,7 @@ test-server: test-server.done
 
 # Build the CIM repository defined for the OpenPegasus testsuite.  This is
 # based on the the targets defined in pegasus/TestMakefile. This defines the
-# interop namespace as PG_InterOp and adds a number of other test namespaces
+# interop namespace and adds a number of other test namespaces
 # to support the OpenPegasus test suite.
 .PHONY: create_test_repository
 create_test_repository:

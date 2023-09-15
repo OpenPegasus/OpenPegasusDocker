@@ -30,10 +30,16 @@ CONTAINER_NAME := "openpegasus"
 # This file MUST exist and it attached to the build image by the Docker run command
 PEGASUS_BUILD_ENV_VAR_FILE := "pegasus-build-vars.env"
 
-# Full versioned Docker name of local build image
+REGISTRY_HOSTNAME="kschopmeyer"
+
+# Local and Global versioned Docker name:version of local build image
 LOCAL_BUILD_IMAGE_NAME=${BUILD_IMAGE_NAME}:$(DOCKER_IMAGE_TAG)
-# Full versioned Docker name of build image
-GLOBAL_BUILD_IMAGE_NAME="kschopmeyer/${LOCAL_BUILD_IMAGE_NAME}"
+# Full versioned Docker name of build image including registry hostname prefix
+GLOBAL_BUILD_IMAGE_NAME="${REGISTRY_HOSTNAME}/${LOCAL_BUILD_IMAGE_NAME}"
+
+# LOCAL and GLOBAL Docker name:version for WBEM server image
+LOCAL_SERVER_IMAGE_NAME=${SERVER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
+GLOBAL_SERVER_IMAGE_NAME=${REGISTRY_HOSTNAME}/${LOCAL_SERVER_IMAGE_NAME}
 
 # Definition of start mode for each of the containers:
 # These variables  can be applied on the command line to control whether the
@@ -44,7 +50,7 @@ GLOBAL_BUILD_IMAGE_NAME="kschopmeyer/${LOCAL_BUILD_IMAGE_NAME}"
 #    make run-server-image RUN=auto
 
 MANUAL_STR := /bin/bash
-# NOTE: AUTO_STR must be empty and not empty string. This is string set into
+# AUTO_STR must be empty and not empty string. This is string set into
 # the docker run command.
 AUTO_STR :=
 
@@ -89,7 +95,6 @@ else
 endif
 
 $(info "branch" ${PEGASUS_GIT_BRANCH} flag SET_PEGASUS_GIT_BRANCH_OPTION)
-
 
 
 # Default target if no target is defined when this file is executed. The default
@@ -146,7 +151,7 @@ publish-build-image:
 	#docker image tag ${DOCKER_REGISTRY}/${BUILD_IMAGE_NAME}:$(DOCKER_IMAGE_TAG) ${DOCKER_REGISTRY}/${BUILD_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
 	# User must supply password at terminal
 	docker login -u $${DOCKER_USER}
-	docker push {GLOBAL_BUILD_IMAGE_NAME}
+	docker push ${GLOBAL_BUILD_IMAGE_NAME}
 	docker logout
 
 .PHONY: publish-server-image
@@ -168,30 +173,41 @@ clean-build-image:
 .PHONY: run-build-image
 run-build-image:
 	@echo "BUILD-START-MODE = ${BUILD-START-MODE} SERVER-START-MODE = ${SERVER-START-MODE}"
-	@echo "Run the build image ${DOCKER_USER}/${BUILD_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
+	@echo "Run the build image ${GLOBAL_BUILD_IMAGE_NAME}
 	@echo "Use git branch ${SET-PEGASUS-GIT-BRANCH}"
 	sudo docker run -it --rm \
 		-v /home/${USER}/.ssh:/root/.ssh ${SET_PEGASUS_GIT_BRANCH_OPTION}\
 		--env-file=${PEGASUS_BUILD_ENV_VAR_FILE} \
-		-v /var/run/docker.sock:/var/run/docker.sock ${DOCKER_REGISTRY}/${BUILD_IMAGE_NAME}:${DOCKER_IMAGE_TAG} ${BUILD-START-STR}
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		${GLOBAL_BUILD_IMAGE_NAME} \
+		${BUILD-START-STR}
 
 .PHONY: run-server-image
 run-server-image:
 	@echo "SERVER-START-MODE = ${SERVER-START-MODE}; str = ${SERVER-START-STR}"
-	@echo run the local server container image ${SERVER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
+	@echo run the local server container image ${LOCAL_SERVER_IMAGE_NAME}
 	@echo http port = 15988, https port = 15989
-	sudo docker run -it --rm  -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 \
+	sudo docker run -it --rm \
+		-p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 \
 		--init --ulimit core=-1 \
 		--mount type=bind,source=/tmp/,target=/tmp/ \
-		--log-driver=syslog --name pegasus  ${SERVER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} ${SERVER-START-STR}
+		--log-driver=syslog \
+		--net=bridge \
+		--name pegasus  \
+		${LOCAL_SERVER_IMAGE_NAME} \
+		${SERVER-START-STR}
+# TODO: Extend with option to execute a command
+# cimserver cimserver traceLevel=4 traceComponent=ALL
 
 .PHONY: publish-server-image
 publish-server-image:
 	@echo "Publish image WBEM Server image to private image registry..."
     # Docker password must be supplied at terminal
 	docker login -u $${DOCKER_USER}
-	docker tag ${SERVER_IMAGE_NAME}:${SERVER_IMAGE_VERSION} ${DOCKER_REGISTRY}/${SERVER_IMAGE_NAME}:${SERVER_IMAGE_VERSION}
-	docker push ${DOCKER_REGISTRY}/${SERVER_IMAGE_NAME}:${SERVER_IMAGE_NAME_VERSION}
+	#docker tag ${SERVER_IMAGE_NAME}:${SERVER_IMAGE_VERSION} ${DOCKER_REGISTRY}/${SERVER_IMAGE_NAME}:${SERVER_IMAGE_VERSION}
+	docker tag ${LOCAL_SERVER_IMAGE_NAME} ${GLOBAL_SERVER_IMAGE_NAME}
+	#docker push ${DOCKER_REGISTRY}/${SERVER_IMAGE_NAME}:${SERVER_IMAGE_NAME_VERSION}
+	docker push ${GLOBAL_SERVER_IMAGE_NAME}
 	docker logout
 	@echo "Makefile: Target $@ complete"
 
