@@ -34,9 +34,10 @@ COPY ./openpegasus_home ${PEGASUS_RUN_ROOT}
 # Copy the build environment variables as record of the build configuration
 COPY ./pegasus-build-variables.env ${PEGASUS_RUN_ROOT}
 
-# Copy all files from the supplementary_run_files to same directory in image
-# Any files used in development, etc. can be placed here without affecting
-# the Docker or make files.
+# Copy all files from the supplementary_run_files directory to same directory
+# in image.
+# Any files used in development, testing, etc. can be placed here without
+# affecting the Docker, make files or cimserver run configuration.
 COPY ./supplementary_run_files/ ${PEGASUS_RUN_ROOT}/supplementary_run_files/
 
 # Pegasus Run components directory. This directory contains the bin, lib,
