@@ -2,6 +2,27 @@
 
 ##Change log
 
+## OpenPegasusDocker 0.1.4
+
+Status: Development
+
+### Bugs
+
+1. Clean up issues with Makefiles to make code more consistent
+
+### Enhancements
+
+1. Add directory to repository named supplementary-file-directory.  Anything
+the user includes in this directory will be included in the build container
+and the serve container.  This can be used for diagnostics, test tools, etc.
+
+
+## Cleanup
+
+1. Change name of variable that defines whether container started automatically
+from *-START-MODE to *-START (ex. BUILD-START, SERVER-START)
+
+
 ## OpenPegasusDocker 0.1.3 - Release
 
 Status: **Released 21 Aug. 2023*

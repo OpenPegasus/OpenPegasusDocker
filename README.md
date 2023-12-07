@@ -50,7 +50,7 @@ The following must be present prior to building images.
 
 ## Building the Docker images
 
-### Building the Docker build image
+### Building the OpenPegasus Docker build image
 
 Building the OpenPegasus WBEM Server image is a two step process:
 
@@ -337,22 +337,22 @@ sudo docker run -it --rm -p 127.0.0.1:15988:5988 -p 127.0.0.1:15989:5989 kschopm
 ```
 
 
-## Configuration of OpenPegasus in the run image
+## Default configuration of OpenPegasus in the run image
 
-The default run server (define with the pegasus-build-vars.env file) has the
+The default run server (defined with the pegasus-build-vars.env file) has the
 following characteristics as defined by the variables in the the server build
 Docker file (Docker file in the repository)
 
 1. Both https and http available. The default defined in Dockerfile is
 port 15988 for http and 15989 for https.
 
-2. A set of locally define SSL  certificates
+2. A set of locally defined SSL  certificates
 
-3 The CIM repository that is based on what has been built into the OpenPegasus source
-repository for testing.  Currently it is the CIM repository for CIM Schema
-2.41.0 and a set of extensions for testing OpenPegasus including a number of
-classes and corresponding pegasus test providers.  This is scattered over a
-number of CIM namespaces including an Interop namespace root/PG_InterOp.
+3 The CIM repository that is based on what has been built into the OpenPegasus
+source repository for testing.  Currently it is the CIM repository for CIM
+Schema 2.41.0 and a set of extensions for testing OpenPegasus including a
+number of classes and corresponding pegasus test providers.  This is scattered
+over a number of CIM namespaces including an Interop namespace root/PG_InterOp.
 
 4. OpenPegasus wbem server so that once the server is running in the run
 container, overall information on the server can be viewed on the containers
@@ -360,6 +360,25 @@ URI and OpenPegasus ports
 
 5. The OpenPegasus web server which allows remotely viewing and modifying
 characteristics of the server running at http://localhost:15988
+
+## Build configuration alternatives:
+
+### Source for the OpenPegasus source code
+
+The OpenPegasus source code is retrieved from github.  The Dockerfile defined variables
+
+* PEGASUS_GIT_REPOSITORY - Defines the uri of the OpenPegasus source code.
+  The default is http://github.com/OpenPegasus/OpenPegasus.git
+
+* PEGASUS_GIT_TAG - Defines a git tag in the OpenPegasus git repository from
+  which the code is retrieved.  This is overrident by the PEGASUS_GIT_BRANCH if
+  that env var exists.  This is set in the Docker file to the latest version
+  of OpenPegasus available from the OpenPegasus git repository.
+
+* PEGASUS_GIT_BRANCH - If set, this env variable defines a branch from which
+  OpenPegasus is cloned.  It may be any existing branch including main. This
+  alternative is useful for building/testing OpenPegasus in a container.
+
 
 ## Frequently asked questions
 Please see [FAQ.md](./FAQ.md) for frequently asked questions.

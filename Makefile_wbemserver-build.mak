@@ -39,6 +39,12 @@
 # 4. See the targets in the Makefile that builds the build image for detailed
 #    examples of the docker commands to start the build image and the
 #    run image.
+#
+# 5. The full test suite can only be run with PEGASUS_INTEROP_NAMESPACE = root/PG_InterOp.
+#    Some of the client and support files have the namespace hard coded into
+#    the files.  See the Makefile pegasus/Makefile.interop which is a tool
+#    to modify the hardcoded namespace info and also documents the required with
+#    using interop or root/interop as interop namespace
 
 # No built-in rules needed:
 MAKEFLAGS += --no-builtin-rules
@@ -67,7 +73,6 @@ help:
 	@echo "       deploy subtargets:"
 	@echo "         make build-image - Create the local server run image."
 	@echo "         make provision-server - Install repository, certs, etc."
-	@echo "         make provision-server - Install repository, certs, etc."
 	@echo "         make build-server-image - clean cruft and build the local image"
 	@echo "         make remove-components & clean cruft from build components."
 	@echo "  make publish       Push the server image to an image registry."
@@ -76,7 +81,7 @@ help:
 	@echo ""
 	@echo "Build and run configuration variables. See: Dockerfile and pegaus-build-vars.env"
 	@echo "Git and Docker variables for image build "
-	@echo "  SERVER_IMAGE = The name of the server docker image"
+	@echo "  SERVER_IMAGE_NAME = The name of the server docker image"
 	@echo "  SERVER_VERSION = The name of the server docker image version"
 	@echo "  PEGASUS_GIT_REPOSITORY = The uri of the OpenPegasus github repo"
 	@echo "  PEGASUS_GIT_BRANCH = OpenPegasus git branch. Overrides PEGASUS_GIT_TAG"
@@ -100,6 +105,7 @@ help:
 build.done: checkout-repository build-server test-server
 	@echo "done" >$@
 	@echo "Makefile: Done checkout, build, test OpenPegasus"
+	@echo "Makefile: Target $@ complete"
 
 .PHONY: build
 build: build.done
@@ -140,8 +146,8 @@ checkout-repository.done:
 	@echo "Set global git config to ignore certificate..."
 	@git config --global http.sslverify false
 
-    # PEGASUS_GIT_BRANCH, overrides clone the tag, Clones main and checkout branch
-    #  Really have 3 choices, branch, main, tag.  use main as branch name
+    # PEGASUS_GIT_BRANCH, overrides PEGASUS_GIT_TAG, Clones main and checkout branch
+    # If PEGASUS_GIT_BRNCH exists it must be main or a valid git branch name.
     # NOTE: .ONESHELL  not defined in this script the following defined as single statement
 
 	@if [ ! -z ${PEGASUS_GIT_BRANCH} ]; then \
@@ -165,10 +171,13 @@ checkout-repository.done:
 	@git -C ${PEGASUS_GIT_HOME} status
 
 	@echo "done" >$@
+	@echo "Makefile: Target $@ complete"
+
 
 .PHONY: checkout-repository
 checkout-repository: checkout-repository.done
-	@echo
+	@echo "done" >$@
+	@echo "Target $@ complete"
 
 build-server.done: checkout-repository.done
 	@echo "Building the server using pegasus source..."
@@ -177,7 +186,7 @@ build-server.done: checkout-repository.done
 	@echo "List the current build variables in pegasus-build-variables.env..."
 	@export | grep PEGASUS > pegasus-build-variables.env
 	@echo "done" >$@
-	@echo
+	@echo "Makefile: Target $@ complete"
 
 .PHONY: build-server
 build-server: build-server.done
@@ -192,9 +201,6 @@ build-server: build-server.done
 test-server.done: build-server.done
 	@echo "Testing the WBEM server in the build container..."
 
-	@echo "Set Interop Namespace to root/PG_InterOp..."
-	@export PEGASUS_INTEROP_NAMESPACE="root/PG_InterOp"
-
 	@echo "Create the server build test repository..."
 	@$(MAKE) create_test_repository
 
@@ -206,11 +212,16 @@ test-server.done: build-server.done
     $(MAKE) -C ${PEGASUS_ROOT} ${PEGASUS_TEST_TARGET}; \
     echo "NOTE: Docker repository not clean. Contains data from test."; \
 
-	@echo "done" >$@.done
-	@echo "Target $@ complete"
+	@echo "done" >$@
+	@echo "Makefile: Target $@ complete"
 
 .PHONY: test-server
 test-server: test-server.done
+	@echo "Makefile: Target $@ complete"
+
+# Build the CIM repository defined for the OpenPegasus testsuite.  This is
+# based on the the targets defined in pegasus/TestMakefile. This defines the
+# interop namespace and adds a number of other test namespaces
 
 # Build the CIM repository defined for the OpenPegasus testsuite.  This is
 # based on the the targets defined in pegasus/TestMakefile. This defines the
@@ -223,6 +234,7 @@ create_test_repository:
     # specific repository  Schema extensions extensions.
 	$(MAKE) -C ${PEGASUS_ROOT} testrepository
 	@echo "Test repository created"
+	@echo "Makefile: Target $@ complete"
 
 # Default provision-server.  This creates the repository and test repository
 # that are the same as the test repository except that the namespace is the
@@ -234,6 +246,8 @@ provision-server:
 	@echo "Provision the server in build container based on Pegasus tests..."
 	$(MAKE) -C ${PEGASUS_ROOT} repository
 	$(MAKE) -C ${PEGASUS_ROOT} testrepository
+
+	@echo "Makefile: Target $@ complete"
 
 .PHONY: remove-components
 remove-components:
@@ -257,6 +271,8 @@ remove-components:
 	@echo "Remove unwanted certs"
 	rm -f ${PEGASUS_HOME}/test/testmonth*.* -rf
 
+	@echo "Makefile: Target $@ complete"
+
 # Subtargets for publish target
 
 .PHONY: docker-image-build
@@ -268,6 +284,7 @@ docker-image-build: remove-components
 	docker build --tag ${SERVER_IMAGE}:${SERVER_IMAGE_VERSION} .
 	@echo "Build docker local image ${SERVER_IMAGE}:${SERVER_IMAGE_VERSION} built"
 	@echo "This image can be run with make run-server-image using Makefile from repo."
+	@echo "Makefile: Target $@ complete"
 
 .PHONY: publish
 publish:
@@ -279,7 +296,7 @@ publish:
 	docker tag ${SERVER_IMAGE}:${SERVER_IMAGE_VERSION} ${DOCKER_REGISTRY}/${SERVER_IMAGE}:${SERVER_IMAGE_VERSION}
 	docker push ${DOCKER_REGISTRY}/${SERVER_IMAGE}:${SERVER_IMAGE_VERSION}
 	docker logout
-
+	@echo "Makefile: Target $@ complete"
 
 # Subtargets for clean target
 .PHONY: clean-build
@@ -289,6 +306,7 @@ clean-build:
 	@echo "Clean and clobber the pegasus build components"
 	$(MAKE) -C ${PEGASUS_ROOT} clobber
 	$(MAKE) -C ${PEGASUS_ROOT} clean
+	@echo "Makefile: Target $@ complete"
 
 .PHONY: docker-remove-server-images
 docker-remove-server-images:
@@ -300,6 +318,7 @@ docker-remove-server-images:
 
 	@echo "Removing the server image..."
 	docker rmi ${SERVER_IMAGE}:${SERVER_IMAGE_VERSION}
+	@echo "Makefile: Target $@ complete"
 
 .PHONY: config-info
 config-info:
