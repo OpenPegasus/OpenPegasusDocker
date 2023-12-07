@@ -39,7 +39,7 @@
 # 4. See the targets in the Makefile that builds the build image for detailed
 #    examples of the docker commands to start the build image and the
 #    run image.
-
+#
 # 5. The full test suite can only be run with PEGASUS_INTEROP_NAMESPACE = root/PG_InterOp.
 #    Some of the client and support files have the namespace hard coded into
 #    the files.  See the Makefile pegasus/Makefile.interop which is a tool
@@ -107,10 +107,10 @@ build.done: checkout-repository build-server test-server
 	@echo "Makefile: Done checkout, build, test OpenPegasus"
 	@echo "Makefile: Target $@ complete"
 
-
 .PHONY: build
 build: build.done
 	@echo "OpenPegasus cloned, compiled, and tested."
+	@echo "done" >$@
 	@echo "Makefile: Target $@ done."
 
 deploy.done: build.done provision-server remove-components docker-image-build
@@ -222,6 +222,10 @@ test-server: test-server.done
 # Build the CIM repository defined for the OpenPegasus testsuite.  This is
 # based on the the targets defined in pegasus/TestMakefile. This defines the
 # interop namespace and adds a number of other test namespaces
+
+# Build the CIM repository defined for the OpenPegasus testsuite.  This is
+# based on the the targets defined in pegasus/TestMakefile. This defines the
+# interop namespace as PG_InterOp and adds a number of other test namespaces
 # to support the OpenPegasus test suite.
 .PHONY: create_test_repository
 create_test_repository:
@@ -231,7 +235,6 @@ create_test_repository:
 	$(MAKE) -C ${PEGASUS_ROOT} testrepository
 	@echo "Test repository created"
 	@echo "Makefile: Target $@ complete"
-
 
 # Default provision-server.  This creates the repository and test repository
 # that are the same as the test repository except that the namespace is the
@@ -243,6 +246,7 @@ provision-server:
 	@echo "Provision the server in build container based on Pegasus tests..."
 	$(MAKE) -C ${PEGASUS_ROOT} repository
 	$(MAKE) -C ${PEGASUS_ROOT} testrepository
+
 	@echo "Makefile: Target $@ complete"
 
 .PHONY: remove-components
@@ -269,7 +273,6 @@ remove-components:
 
 	@echo "Makefile: Target $@ complete"
 
-
 # Subtargets for publish target
 
 .PHONY: docker-image-build
@@ -282,7 +285,6 @@ docker-image-build: remove-components
 	@echo "Build docker local image ${SERVER_IMAGE}:${SERVER_IMAGE_VERSION} built"
 	@echo "This image can be run with make run-server-image using Makefile from repo."
 	@echo "Makefile: Target $@ complete"
-
 
 .PHONY: publish
 publish:
@@ -306,7 +308,6 @@ clean-build:
 	$(MAKE) -C ${PEGASUS_ROOT} clean
 	@echo "Makefile: Target $@ complete"
 
-
 .PHONY: docker-remove-server-images
 docker-remove-server-images:
 	@echo "Removing server images..."
@@ -318,7 +319,6 @@ docker-remove-server-images:
 	@echo "Removing the server image..."
 	docker rmi ${SERVER_IMAGE}:${SERVER_IMAGE_VERSION}
 	@echo "Makefile: Target $@ complete"
-
 
 .PHONY: config-info
 config-info:
