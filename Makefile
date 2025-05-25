@@ -25,9 +25,12 @@ SERVER_IMAGE_NAME=openpegasus-server
 DOCKER_IMAGE_TAG := $(shell cat version.txt)
 # Docker name of the OpenPegasus WBEM server run container
 # TODO: Not required in this makefile
-CONTAINER_NAME := "openpegasus"
-# Name of file defining OpenPegasus build environment variables.
-# This file MUST exist and it attached to the build image by the Docker run command
+RUN_CONTAINER_NAME := "openpegasus"
+# Name of file defining the OpenPegasus build environment variables.
+# This file defines the compile and test parameters as environment variable,
+# consistent with the definitions defined for OpenPegasus build.  See
+# the OpenPegasus build and release documentation for more details.
+# This file MUST exist. It is included in the build image by the Docker run command
 PEGASUS_BUILD_ENV_VAR_FILE := "pegasus-build-vars.env"
 
 REGISTRY_HOSTNAME="kschopmeyer"
@@ -92,14 +95,14 @@ else
   SERVER-START-STR = $(AUTO_STR)
 endif
 
-# Create SET-PEGASUS_GIT_BRANCH option base on existence of PEGASUS_GIT_BRANCH env var
+# Create SET-PEGASUS_GIT_BRANCH_OPTION based on existence of PEGASUS_GIT_BRANCH env var
 ifdef PEGASUS_GIT_BRANCH
     SET_PEGASUS_GIT_BRANCH_OPTION := --env PEGASUS_GIT_BRANCH=$(PEGASUS_GIT_BRANCH)
 else
    SET_PEGASUS_GIT_BRANCH_OPTION :=
 endif
 
-$(info "branch" $(PEGASUS_GIT_BRANCH) flag = SET_PEGASUS_GIT_BRANCH_OPTION)
+$(info "Use git branch" $(PEGASUS_GIT_BRANCH) flag = SET_PEGASUS_GIT_BRANCH_OPTION)
 
 
 # Default target if no target is defined when this file is executed. The default
@@ -127,15 +130,16 @@ help:
 	@echo "  make run-server-image    Run docker OpenPegasus WBEM server in container"
 	@echo "                             with default HTTP and HTTPS ports"
 	@echo ""
-	@echo "Build variables"
+	@echo "OpenPegaus Build variables and image variables"
 	@echo "  Docker registry (DOCKER_REGISTRY) = $(DOCKER_REGISTRY)"
-	@echo "  Docker image name (BUILD_IMAGE_NAME) = ${BUILD_IMAGE_NAME}"
+	@echo "  Docker build image name (BUILD_IMAGE_NAME) = ${BUILD_IMAGE_NAME}"
 	@echo "  Docker image version tag (DOCKER_IMAGE_TAG) = ${DOCKER_IMAGE_TAG}"
+	@echo "  Docker run image name (RUN_IMAGE_NAME) = {RUN_IMAGE_NAME}"
 	@echo "  Pegasus build environment variables file = ${PEGASUS_BUILD_ENV_VAR_FILE}."
 	@echo "     (${PEGASUS_BUILD_ENV_VAR_FILE}) is required;"
 	@echo "     it defines the pegasus build configuration."
-	@echo "  Start build image choice BUILD-START;  default manual"
-	@echo "  Start run image choice SERVER-START;  default auto"
+	@echo "  Start build image choice BUILD-START=(manual/auto);  default manual"
+	@echo "  Start run image choice SERVER-START=(manual/auto);  default auto"
 	@echo "     Values are 'auto'/'manual' or not set. May be set on make command"
 	@echo "     line or env var."  make run-server-image SERVER-START=manual
 	@echo ""
@@ -168,7 +172,11 @@ clean-build-image:
 run-build-image:
 	@echo "BUILD-START=(BUILD-START); SERVER-START=$(SERVER-START)"
 	@echo "Run the build image $(GLOBAL_BUILD_IMAGE_NAME)"
-	@echo "Use git branch $(SET-PEGASUS-GIT-BRANCH)"
+        ifdef SET-PEGASUS-GIT-BRANCH_OPTION
+            $(info Using git branch $(SET-PEGASUS-GIT-BRANCH_OPTION))
+		else
+			$info(info Using OpenPegasus release )
+        endif
 	sudo docker run -it --rm \
 		-v /home/$(USER)/.ssh:/root/.ssh $(SET_PEGASUS_GIT_BRANCH_OPTION)\
 		--env-file=$(PEGASUS_BUILD_ENV_VAR_FILE) \

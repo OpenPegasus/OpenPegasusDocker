@@ -85,9 +85,9 @@ help:
 	@echo "  SERVER_VERSION = The name of the server docker image version"
 	@echo "  PEGASUS_GIT_REPOSITORY = The uri of the OpenPegasus github repo"
 	@echo "  PEGASUS_GIT_BRANCH = OpenPegasus git branch. Overrides PEGASUS_GIT_TAG"
-	@echo "    Checkout current main and switch to defined branch."
-	@echo "  PEGASUS_GIT_TAG = OpenPegasus git tag. Ignore when PEGASUS_GIT_BRANCH set"
-	@echo "     Change this to select particular version of pegasus used"
+	@echo "    Checkout branch defined in env var and switch to defined branch."
+	@echo "  PEGASUS_GIT_TAG = OpenPegasus git tag. Ignored when PEGASUS_GIT_BRANCH set"
+	@echo "     Change this to select particular release version of pegasus used"
 	@echo "  DOCKER_REGISTRY = Public registry where run image published"
 	@echo ""
 	@echo "Build and test control variables."
@@ -147,25 +147,34 @@ checkout-repository.done:
 	@git config --global http.sslverify false
 
     # PEGASUS_GIT_BRANCH, overrides PEGASUS_GIT_TAG, Clones main and checkout branch
-    # If PEGASUS_GIT_BRNCH exists it must be main or a valid git branch name.
+    # If PEGASUS_GIT_BRANCH exists it must be "main" or another existing git branch name.
     # NOTE: .ONESHELL  not defined in this script the following defined as single statement
 
-	@if [ ! -z ${PEGASUS_GIT_BRANCH} ]; then \
-        echo "Cloning OpenPegasus github repo main branch to WBEM root directory"; \
-        if [ ! -d ${PEGASUS_ROOT} ]; then \
-            git clone ${PEGASUS_GIT_REPOSITORY}; \
-            echo "OpenPegasus ${PEGASUS_GIT_REPOSITORY} main cloned."; \
-            if [  ${PEGASUS_GIT_BRANCH} != "main" ]; then \
-                echo "git checkout  branch ${PEGASUS_GIT_BRANCH}."; \
-                git -C ${PEGASUS_GIT_HOME} checkout ${PEGASUS_GIT_BRANCH}; \
-            fi; \
+	@if [ -d ${PEGASUS_ROOT} ]; then \
+        echo "Error: Git checkout Directory OpenPegasus already exists."; \
+        false;
+
+	@if [ -n ${PEGASUS_GIT_BRANCH} ]; then \
+            echo "Cloning OpenPegasus github repo branch $(PEGASUS_GIT_BRANCH) to WBEM root directory"; \
+            if [ ! -z ${PEGASUS_GIT_TAG} ]; then \
+                echo "PEGASUS_GIT_TAG=${PEGASUS_GIT_TAG} ignored.  Checking out branch"; \
+        fi; \
+        git clone ${PEGASUS_GIT_REPOSITORY}; \
+        echo "OpenPegasus ${PEGASUS_GIT_REPOSITORY} main cloned."; \
+        if [ ${PEGASUS_GIT_BRANCH} != "main" ]; then \
+            echo "git checkout  branch ${PEGASUS_GIT_BRANCH}."; \
+            cd OpenPegasus  \
+            git -C ${PEGASUS_GIT_HOME} checkout ${PEGASUS_GIT_BRANCH}; \
+            cd ../ \
         fi; \
     else \
+        if [ -z ${PEGASUS_GIT_TAG} ]; then \
+            echo "Clone failed. PEGASUS_GIT_TAG does not exist."; \
+            false; \
+        fi; \
         echo "Cloning OpenPegasus github repo tag ${PEGASUS_GIT_TAG} to WBEM root directory"; \
-        if [ ! -d ${PEGASUS_ROOT} ]; then \
             git clone ${PEGASUS_GIT_REPOSITORY} --branch ${PEGASUS_GIT_TAG}; \
             echo "OpenPegasus ${PEGASUS_GIT_REPOSITORY} tag ${PEGASUS_GIT_TAG} cloned."; \
-        fi; \
     fi;
 
 	@git -C ${PEGASUS_GIT_HOME} status

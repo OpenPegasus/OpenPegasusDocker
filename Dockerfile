@@ -1,4 +1,9 @@
 ######## Start builder #######
+
+# Dockerfile used for the build image.  This Docker file defines the components
+# required to build the OpenPegasus executable, test it, and create a runtime
+# image.
+
 FROM ubuntu:20.04
 
 # Ignore DL3002: Last user should not be root.
@@ -24,10 +29,11 @@ SHELL [ "/bin/bash", "-o", "pipefail", "-c" ]
 # Ignore DL3005 that disallows apt-get upgrade
 # Ignore DL3008: Pin versions in apt-get install.
 # hadolint ignore=DL3005,DL3008
-# This installs ubuntu updates and build support tools into the build container
+
+# Install ubuntu updates and build support tools into the build container
 # Since the build container is used only in the process of building and testing
-# OpenPegasus, size is not important
-# This includes a number of development support tools that might prove useful
+# OpenPegasus build image, size is not important.
+# This includes a number of development support tools that may prove useful
 # if the OpenPegasus code is to be inspected or modified
 RUN apt-get update && apt-get -y upgrade && \
     apt-get install -y --no-install-recommends \
@@ -65,10 +71,15 @@ ENV DOCKER_USER=kschopmeyer
 
 # OpenPegasus Server image name
 ENV SERVER_IMAGE="openpegasus-server"
-# TODO: Get version from version.txt might be better
-ENV SERVER_IMAGE_VERSION="0.1.3"
-# The following fails.
-# ENV SERVER_IMAGE_VERSION=$(shell cat version.txt)
+
+# get server_image_version. TODO get from version.txt
+ENV SERVER_IMAGE_VERSION="0.1.4-DEV"
+# The following fails. # ENV SERVER_IMAGE_VERSION=$(shell cat version.txt)
+
+
+WORKDIR /app
+COPY mytextfile.txt .
+RUN cat mytextfile.txt
 
 # Git OpenPegasus Repository name. Contains OpenPegasus source code
 ENV PEGASUS_GIT_REPOSITORY=http://github.com/OpenPegasus/OpenPegasus.git
@@ -89,7 +100,7 @@ ENV PEGASUS_GIT_REPOSITORY=http://github.com/OpenPegasus/OpenPegasus.git
 # PEGASUS_GIT_TAG and PEGASUS_GIT_BRANCH define the github source tag/branch
 # for cloning OpenPegasus.
 # The existence of PEGASUS_GIT_BRANCH env variable overrides PEGASUS_GIT_TAG.
-# PEGASUS_GIT_TAG defines a releas tag as the source. It is preset to the
+# PEGASUS_GIT_TAG defines a release tag as the source. It is preset to the
 # current latest release of OpenPegasus.
 
 ENV PEGASUS_GIT_TAG="v2.14.4"
@@ -100,7 +111,7 @@ ENV PEGASUS_GIT_TAG="v2.14.4"
 # Uncomment the following line to clone current git main branch. Change main to
 # a valid git branch name to clone that branch. An alternative is to include
 # --env PEGASUS_GIT_BRANCH=<branch name on the Docker run command for the build
-# image or simple append PEGASUS_GIT_BRANCH=<branch name> to the
+# image or simply append PEGASUS_GIT_BRANCH=<branch name> to the
 # make run-build-server Makefile target.
 
 # ENV PEGASUS_GIT_BRANCH="main"
@@ -139,7 +150,7 @@ ENV PATH=${PEGASUS_HOME}/bin:$PATH
 # detailed information on particular variables.
 # These environment variables are used during the
 # build of OpenPegasus (They define the compile characteristics of
-# OpenPegasus) and the functions enabled.
+# OpenPegasus) and the  WBEM server functions enabled.
 
 # Settings that are flags, with values set to true, enable the action
 # simply through the existence of the variable.  The variables value has no
@@ -161,6 +172,12 @@ COPY ./Dockerfile_wbemserver-build ${PEGASUS_BUILD_ROOT}/Dockerfile
 # directory in the build image.  These files will then be copied to the
 # build image in the same directory name.
 COPY ./supplementary_run_files ${PEGASUS_BUILD_ROOT}/supplementary_run_files/
+
+# Copy the pegasus startup bash file to the build root.  This file defines
+# the actions to start the OpenPegasus server in the run container.
+# This allows flexibility in setup and start of the OpenPegasus server
+# in the run container without modifyin the Dockerfile.
+COPY supplementary_run_files/control_pegasus.sh ${PEGASUS_BUILD_ROOT}
 
 # OpenPegasus Build folder
 WORKDIR ${PEGASUS_BUILD_ROOT}

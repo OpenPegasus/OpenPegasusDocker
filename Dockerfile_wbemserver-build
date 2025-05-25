@@ -47,4 +47,5 @@ WORKDIR ${PEGASUS_RUN_ROOT}
 
 # Set to start WBEM server on startup. Can override on command line run command
 ENTRYPOINT ["/bin/bash", "-l", "-c"]
-CMD ["cimserver; tail -f /dev/null"]
+# Original cmd that started server directly CMD ["cimserver; tail -f /dev/null"]
+CMD ["start_cimserver.sh"]
