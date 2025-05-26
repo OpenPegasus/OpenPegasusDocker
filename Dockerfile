@@ -72,9 +72,13 @@ ENV DOCKER_USER=kschopmeyer
 # OpenPegasus Server image name
 ENV SERVER_IMAGE="openpegasus-server"
 
-# get server_image_version. TODO get from version.txt
-ENV SERVER_IMAGE_VERSION="0.1.4-DEV"
+# get server_image_version. TODO get from version.txt  TODO
+# SERVER_IMAGE_VERSION and tag are tied up together.  SERVER_IMAGE_VERSION
+# used in Makefile_wbemserver-build.mak  to define the version part of the
+# server image tag.  I think we have some duplicated versioning here.
+# ENV SERVER_IMAGE_VERSION="0.1.4-DEV"
 # The following fails. # ENV SERVER_IMAGE_VERSION=$(shell cat version.txt)
+# Moved this to another env file and it is loaded on run-build-image
 
 
 WORKDIR /app

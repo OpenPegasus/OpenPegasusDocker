@@ -22,6 +22,7 @@ BUILD_IMAGE_NAME=openpegasus-build
 # Name for the Docker WBEM server run image
 SERVER_IMAGE_NAME=openpegasus-server
 # Tag for the build  and run images.  This is the current version of this repo.
+# TODO: The naming is not clean here.  DOCKER_IMAGE_TAG
 DOCKER_IMAGE_TAG := $(shell cat version.txt)
 # Docker name of the OpenPegasus WBEM server run container
 # TODO: Not required in this makefile
@@ -91,19 +92,16 @@ ifdef SERVER-START
     $(error SERVER-START=$(SERVER-START) invalid. Must be auto or manual. Default: auto)
   endif
 else
-  $(info SVR_ST3 $(SERVER-START) )
+  $(info SVR_START= $(AUTO_STR) )
   SERVER-START-STR = $(AUTO_STR)
 endif
 
 # Create SET-PEGASUS_GIT_BRANCH_OPTION based on existence of PEGASUS_GIT_BRANCH env var
+# TODO: THis is redundant
 ifdef PEGASUS_GIT_BRANCH
-    SET_PEGASUS_GIT_BRANCH_OPTION := --env PEGASUS_GIT_BRANCH=$(PEGASUS_GIT_BRANCH)
-else
-   SET_PEGASUS_GIT_BRANCH_OPTION :=
+    # SET_PEGASUS_GIT_BRANCH_OPTION := --env PEGASUS_GIT_BRANCH=$(PEGASUS_GIT_BRANCH)
+    $(info Clone git branch: $(PEGASUS_GIT_BRANCH))
 endif
-
-$(info "Use git branch" $(PEGASUS_GIT_BRANCH) flag = SET_PEGASUS_GIT_BRANCH_OPTION)
-
 
 # Default target if no target is defined when this file is executed. The default
 # is to execute the build target
@@ -125,8 +123,14 @@ help:
 	@echo "  make publish-run-image   Push the server image to Docker image registry."
 	@echo "                             Allows publishing server image from this Makefile"
 	@echo "  make clean	              Remove the build image from the local machine."
-	@echo "  make run-build-image     Run the docker build the pegasus server image."
+	@echo "  make run-build-image     Run the docker build  image."
 	@echo "                             PEGASUS_GIT_BRANCH accepted on cmd line."
+	@echo "                             If env var PEG_HOST_DIR set the host "
+	@echo "                             will be used as the Pegasus work dir."
+	@echo "                             so the pegasus source will be in this host dir."
+	@echo "                             PEGASUS_GIT_BRANCH accepted on cmd line."
+	@echo "                             and determines if git branch to tag used."
+	@echo "                             If PEG_HOST_DIR exists and OpenPegasus exists, git is not cloned."
 	@echo "  make run-server-image    Run docker OpenPegasus WBEM server in container"
 	@echo "                             with default HTTP and HTTPS ports"
 	@echo ""
@@ -137,11 +141,11 @@ help:
 	@echo "  Docker run image name (RUN_IMAGE_NAME) = {RUN_IMAGE_NAME}"
 	@echo "  Pegasus build environment variables file = ${PEGASUS_BUILD_ENV_VAR_FILE}."
 	@echo "     (${PEGASUS_BUILD_ENV_VAR_FILE}) is required;"
-	@echo "     it defines the pegasus build configuration."
+	@echo "     it defines the pegasus build configuration env variables."
 	@echo "  Start build image choice BUILD-START=(manual/auto);  default manual"
 	@echo "  Start run image choice SERVER-START=(manual/auto);  default auto"
 	@echo "     Values are 'auto'/'manual' or not set. May be set on make command"
-	@echo "     line or env var."  make run-server-image SERVER-START=manual
+	@echo "     line or env var."  make run-server-image SERVER-START=manual ""
 	@echo ""
 	@echo "NOTE: DOCKER_PASSWORD is requested for publish"
 	@echo ""
@@ -172,14 +176,17 @@ clean-build-image:
 run-build-image:
 	@echo "BUILD-START=(BUILD-START); SERVER-START=$(SERVER-START)"
 	@echo "Run the build image $(GLOBAL_BUILD_IMAGE_NAME)"
-        ifdef SET-PEGASUS-GIT-BRANCH_OPTION
-            $(info Using git branch $(SET-PEGASUS-GIT-BRANCH_OPTION))
-		else
-			$info(info Using OpenPegasus release )
-        endif
+    ifdef PEGASUS_GIT_BRANCH
+        $(info Using OpenPegasus git branch: $(PEGASUS_GIT_BRANCH))
+        SET_PEGASUS_GIT_BRANCH_OPTION = "-env $(PEGASUS_GIT_BRANCH)"
+	else
+        SET_PEGASUS_GIT_BRANCH_OPTION = ""
+    endif
+	$(info PEGASUS_GIT_BRANCH_OPTION= $(PEGASUS_GIT_BRANCH_OPTION))
 	sudo docker run -it --rm \
-		-v /home/$(USER)/.ssh:/root/.ssh $(SET_PEGASUS_GIT_BRANCH_OPTION)\
+		-v /home/$(USER)/.ssh:/root/.ssh $(SET_PEGASUS_GIT_BRANCH_OPTION) \
 		--env-file=$(PEGASUS_BUILD_ENV_VAR_FILE) \
+		--env-file=server-image_version.env \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		$(GLOBAL_BUILD_IMAGE_NAME) \
 		$(BUILD-START-STR)
